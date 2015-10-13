@@ -1,5 +1,6 @@
 ##### find_plot_outlier.R #####
 # Kuan-lin Huang @ WashU 2015 Oct
+# do another smad normalization for all data type first
 # run outlier analysis for 3 cancer types and plot the result
 
 ##### dependencies #####
@@ -18,6 +19,9 @@ druggable = as.vector(t(drugList))
 # function to format CDAP proteome data processed by Kuan
 format_pro = function(Pro.m){
   colnames(Pro.m) = sub(".Unshared.Log.Ratio","",colnames(Pro.m)) 
+  # normalize the whole matrix first 
+  Pro.m[,-1] = (Pro.m[,-1] - mean(as.matrix(Pro.m[,-1]), na.rm=T))/sd(as.matrix(Pro.m[,-1]), na.rm=T)
+  
   Pro.m.d = Pro.m[Pro.m$Gene %in% druggable,]
   row.names(Pro.m.d) = Pro.m.d$Gene
   Pro.m.dn = Pro.m.d[,-1]
@@ -33,6 +37,8 @@ format_crc = function(Pro.m){
   # quantile normalization using function from limma and log2 transformation: Nature CRC proteogenomics 2014
   Pro.mn = normalizeQuantiles(Pro.m,ties=T)
   Pro.mnl = log2(Pro.mn)
+  # normalize the whole matrix first
+  Pro.mnl = (Pro.mnl - mean(as.matrix(Pro.mnl), na.rm=T))/sd(as.matrix(Pro.mnl), na.rm=T)
   Pro.m.d = Pro.mnl[Gene %in% druggable,]
   
   return(Pro.m.d)
@@ -44,24 +50,25 @@ normalize_CNV = function(CNV.m){
   row.names(CNV.m) = sub(" ","", row.names(CNV.m))
   CNV.n.m = as.matrix(CNV.m)
   for (i in 1:nrow(CNV.n.m)){
-    CNV.n.m[i,]=log10(CNV.n.m[i,]/mean(CNV.n.m[i,], na.rm=T)) # used log2 in previous versions
+    CNV.n.m[i,]=log(CNV.n.m[i,]/mean(CNV.n.m[i,], na.rm=T), base=2)
   } 
+  # normalize the whole matrix
+  CNV.n.m = (CNV.n.m - mean(as.matrix(CNV.n.m), na.rm=T))/sd(as.matrix(CNV.n.m), na.rm=T)
   CNV.n.md = CNV.n.m[row.names(CNV.n.m) %in% druggable,]
   return(CNV.n.md)
 }
 
 # function to normalize RSEM
 format_RSEM = function(RSEM.m){ # should be normalized using the 75% quantile method already
-  RSEM.m.d = RSEM.m[RSEM.m$Hybridization.REF %in% druggable,]
-  row.names(RSEM.m.d) = RSEM.m.d$Hybridization.REF
-  RSEM.m.d = RSEM.m.d[,-1]
-  RSEM.m.d.n = as.matrix(RSEM.m.d)
-  # alternative way to normalize that results in less outliers?
-#   for (i in 1:nrow(RSEM.m.d.n)){
-#     RSEM.m.d.n[i,]=log(RSEM.m.d.n[i,]/mean(RSEM.m.d.n[i,], na.rm=T), base=2)
-#   } 
-  RSEM.m.d.n = log2(RSEM.m.d.n) # simply log2 transform
-  return(RSEM.m.d.n)
+  Gene = RSEM.m$Hybridization.REF
+  RSEM.m = as.matrix(RSEM.m[,-1])
+  for (i in 1:nrow(RSEM.m)){
+    RSEM.m[i,]=log(RSEM.m[i,]/mean(RSEM.m[i,], na.rm=T), base=2)
+  } 
+  # normalize the whole matrix
+  RSEM.m = (RSEM.m - mean(as.matrix(RSEM.m), na.rm=T))/sd(as.matrix(RSEM.m), na.rm=T)
+  RSEM.m.d = RSEM.m[Gene %in% druggable,]
+  return(RSEM.m.d)
 }
 
 ##### BRCA #####
@@ -69,22 +76,22 @@ format_RSEM = function(RSEM.m){ # should be normalized using the 75% quantile me
 BRCA_CNV = read.table(na.strings="NA ",row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_CNV/BRCA_105_CNV.txt")
 # "NA " fail, be careful next time about the new space character
 BRCA_CNV.d = normalize_CNV(BRCA_CNV)
-BRCA_CNV_druggable = find_outlier(BRCA_CNV.d, name = "BRCA druggable CNV")
+BRCA_CNV_druggable = find_outlier(BRCA_CNV.d, name = "BRCA druggable CNV normalized")
 
 ### RNA ###
 BRCA_RNA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RNA/TCGA_Breast_BI_RSEM.tsv.parsed_hugoified")
 BRCA_RNA.d = format_RSEM(BRCA_RNA)
-BRCA_RNA_druggable = find_outlier(BRCA_RNA.d, name = "BRCA druggable RNA")
+BRCA_RNA_druggable = find_outlier(BRCA_RNA.d, name = "BRCA druggable RNA normalized")
 
 ### Proteome ###
 BRCA_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/BRCA/TCGA_Breast_BI_Proteome_CDAP.r2/TCGA_Breast_BI_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 BRCA_Pro.d = format_pro(BRCA_Pro)
-BRCA_Pro_druggable = find_outlier(BRCA_Pro.d, name = "BRCA druggable proteome")
+BRCA_Pro_druggable = find_outlier(BRCA_Pro.d, name = "BRCA druggable proteome normalized")
 
 ### Phosphoproteome ###
 BRCA_Pho = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/BRCA/TCGA_Breast_BI_Phosphoproteome_CDAP.r2/TCGA_Breast_BI_Phosphoproteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 BRCA_Pho.d = format_pro(BRCA_Pho)
-BRCA_Pho_druggable = find_outlier(BRCA_Pho.d, name = "BRCA druggable phosphoproteome")
+BRCA_Pho_druggable = find_outlier(BRCA_Pho.d, name = "BRCA druggable phosphoproteome normalized")
 
 ### all levels ###
 # do this later, may be more benefitial to do the all outlier table and summarize that instead
@@ -93,12 +100,12 @@ BRCA_Pho_druggable = find_outlier(BRCA_Pho.d, name = "BRCA druggable phosphoprot
 ### CNV ###
 OV_CNV = read.table(na.strings="NA ",row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_CNV/OV_173_CNV.txt")
 OV_CNV.d = normalize_CNV(OV_CNV)
-OV_CNV_druggable = find_outlier(OV_CNV.d, name = "OV druggable CNV")
+OV_CNV_druggable = find_outlier(OV_CNV.d, name = "OV druggable CNV normalized")
 
 ### RNA ###
 OV_RNA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RNA/TCGA_OV_RSEM.tsv.parsed_hugoified")
 OV_RNA.d = format_RSEM(OV_RNA)
-OV_RNA_druggable = find_outlier(OV_RNA.d, name = "OV druggable RNA")
+OV_RNA_druggable = find_outlier(OV_RNA.d, name = "OV druggable RNA normalized")
 
 ### Proteome ###
 OV_JHU_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/JHU_Proteome_CDAP.r2/TCGA_Ovarian_JHU_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
@@ -107,18 +114,18 @@ OV_PNNL_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/Ph
 OV_JHU_Pro.d = format_pro(OV_JHU_Pro)
 OV_PNNL_Pro.d = format_pro(OV_PNNL_Pro)
 
-OV_JHU_Pro_druggable = find_outlier(OV_JHU_Pro.d, name = "OV JHU druggable proteome")
-OV_PNNL_Pro_druggable = find_outlier(OV_PNNL_Pro.d, name = "OV PNNL druggable proteome")
+OV_JHU_Pro_druggable = find_outlier(OV_JHU_Pro.d, name = "OV JHU druggable proteome normalized")
+OV_PNNL_Pro_druggable = find_outlier(OV_PNNL_Pro.d, name = "OV PNNL druggable proteome normalized")
 
 ### Phosphoproteome ###
 OV_Pho = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/PNNL_Phosphoproteome_CDAP.r2/TCGA_Ovarian_PNNL_Phosphoproteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 OV_Pho.d = format_pro(OV_Pho)
-OV_Pho_druggable = find_outlier(OV_Pho.d, name = "OV PNNL druggable phosphoproteome")
+OV_Pho_druggable = find_outlier(OV_Pho.d, name = "OV PNNL druggable phosphoproteome normalized")
 
 ### Glycoproteome ###
 OV_Gly = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/JHU_Glycoproteome_CDAP.r2/TCGA_Ovarian_JHU_Glycoproteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 OV_Gly.d = format_pro(OV_Gly)
-OV_Gly_druggable = find_outlier(OV_Gly.d, name = "OV JHU druggable glycoproteome")
+OV_Gly_druggable = find_outlier(OV_Gly.d, name = "OV JHU druggable glycoproteome normalized")
 
 ### merging the two proteome? ###
 ### all levels ###
@@ -127,18 +134,18 @@ OV_Gly_druggable = find_outlier(OV_Gly.d, name = "OV JHU druggable glycoproteome
 ### CNV ###
 CRC_CNV = read.table(na.strings="NA ",row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_CNV/CRC_88_CNV.txt")
 CRC_CNV.d = normalize_CNV(CRC_CNV)
-CRC_CNV_druggable = find_outlier(CRC_CNV.d, name = "CRC druggable CNV")
+CRC_CNV_druggable = find_outlier(CRC_CNV.d, name = "CRC druggable CNV normalized")
 
 ### RNA ###
 CRC_RNA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RNA/TCGA_COADREAD_RSEM_combined.tsv.parsed_hugoified")
 CRC_RNA.d = format_RSEM(CRC_RNA)
-CRC_RNA_druggable = find_outlier(CRC_RNA.d, name = "CRC druggable RNA")
+CRC_RNA_druggable = find_outlier(CRC_RNA.d, name = "CRC druggable RNA normalized")
 
 ### Proteome ###
 CRC_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/CRC/VU_Proteome_CDAP.r2/TCGA_Colon_VU_Proteome_CDAP.r2.spectral_counts.tsv_hugoified.unshared_spectal_counts.txt")
 # spectral count: look into the paper to see how to normalize the count data
 CRC_Pro.d = format_crc(CRC_Pro)
-CRC_Pro_druggable = find_outlier(CRC_Pro.d, name = "CRC druggable proteome")
+CRC_Pro_druggable = find_outlier(CRC_Pro.d, name = "CRC druggable proteome normalized")
 
 ### all levels ###
 

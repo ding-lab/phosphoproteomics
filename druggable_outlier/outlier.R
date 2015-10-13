@@ -118,7 +118,7 @@ find_outlier = function(m, name="dataset", plot=TRUE, h=12, w=44, minNum = 10, w
     p = p + xlab("Sample") + ylab(paste("Top", name,"outliers", sep=" ")) + theme_bw() + 
       theme(axis.title = element_text(size=16), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=14), axis.text.y = element_blank(),axis.ticks.y = element_blank())#element_text(colour="black", size=14))
     p
-    ggsave(file=fn, height=8, width=w)   
+    ggsave(file=fn, height=8, width=w, useDingbats=FALSE)   
   }  
   
   # version that plotted everything
@@ -143,7 +143,7 @@ find_outlier = function(m, name="dataset", plot=TRUE, h=12, w=44, minNum = 10, w
     p = p + xlab("Sample") + ylab("Top Druggable Outliers") + theme_bw() + 
       theme(axis.title = element_text(size=18), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=16), axis.text.y = element_blank(),axis.ticks.y = element_blank())#element_text(colour="black", size=16))
     p
-    ggsave(file=fn, height=h, width=w)
+    ggsave(file=fn, height=h, width=w, useDingbats=FALSE)
   }
   
   # plot only the WHIMs
@@ -169,7 +169,7 @@ find_outlier = function(m, name="dataset", plot=TRUE, h=12, w=44, minNum = 10, w
     p = p + xlab("Sample") + ylab("Top Druggable Outliers") + theme_bw() + 
       theme(axis.title = element_text(size=18), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=14), axis.text.y = element_blank())#element_text(colour="black", size=14))
     p
-    ggsave(file=fn, height=h, width=w)    
+    ggsave(file=fn, height=h, width=w, useDingbats=FALSE)    
   }
   
   # return the top outliers

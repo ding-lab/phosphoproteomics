@@ -30,7 +30,7 @@ p = p + geom_text(aes(x=Level, y=Gene, label = rounded_outlier_percentage, strin
 p = p  + theme_bw() + 
   theme(axis.title = element_text(size=16), axis.text.x = element_text(colour="black", size=14), axis.text.y = element_text(colour="black", size=5),axis.ticks = element_blank())#element_text(colour="black", size=14))
 p
-ggsave(file=fn, height=10, width=15)
+ggsave(file=fn, height=10, width=15, useDingbats=FALSE)
 
 ##### short summary ##### 
 # note this is a bit problematic at this point as didn't print any values lower than 1.5
@@ -54,4 +54,4 @@ p = p + geom_text(aes(x=Level, y=Gene, label = rounded_outlier_percentage, strin
 p = p  + theme_bw() + 
   theme(axis.title = element_text(size=16), axis.text.x = element_text(colour="black", size=14), axis.text.y = element_text(colour="black", size=5),axis.ticks = element_blank())#element_text(colour="black", size=14))
 p
-ggsave(file=fn, height=10, width=15)
+ggsave(file=fn, height=10, width=15, useDingbats=FALSE)
