@@ -77,7 +77,6 @@ find_outlier = function(m, name="dataset", plot=TRUE, h=12, w=44, minNum = 10, w
   fn = paste(pd,name,'outlier_score.txt', sep="_")
   write.table(a, file=fn, quote=F, row.names=T, sep="\t", col.names=NA)
   
-  
   b=rbind(top_outlier, top_outlier_raw)
   b = b[order(row.names(b)),]
   fn = paste(pd,name,'outlier_raw_exp.txt', sep="_")
@@ -114,7 +113,7 @@ find_outlier = function(m, name="dataset", plot=TRUE, h=12, w=44, minNum = 10, w
     p = ggplot()
     p = p + geom_tile(aes(x=as.factor(top_outlier_zscore.m$Var1), y=top_outlier_zscore.m$Var2, fill=ifelse(top_outlier_boolean.m$value,top_outlier_zscore.m$value,NA)), linetype="blank") + scale_fill_gradientn(name= "Outlier score", colours=getPalette(100), na.value=NA, limits=c(0,6))
     p = p + geom_tile(data=top_outlier_boolean.m, aes(x=as.factor(Var1), y=Var2, color=value), fill=NA, size=0.5) + scale_colour_manual(name="Outlier",values = outlier.colors)
-    p = p + geom_text(aes(x=top_outlier.m$Var1, y=top_outlier.m$Var2, label = ifelse(top_outlier_boolean.m$value,top_outlier.m$value,NA), stringsAsFactors=FALSE), color="black", size=5, angle=90)
+    p = p + geom_text(aes(x=top_outlier.m$Var1, y=top_outlier.m$Var2, label = ifelse(top_outlier_boolean.m$value,top_outlier.m$value,NA), stringsAsFactors=FALSE), color="black", size=7, angle=90)
     p = p + xlab("Sample") + ylab(paste("Top", name,"outliers", sep=" ")) + theme_bw() + 
       theme(axis.title = element_text(size=16), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=14), axis.text.y = element_blank(),axis.ticks.y = element_blank())#element_text(colour="black", size=14))
     p

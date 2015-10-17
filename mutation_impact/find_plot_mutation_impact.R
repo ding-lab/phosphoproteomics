@@ -1,14 +1,15 @@
-##### find_plot_outlier.R #####
+##### find_plot_pQTL.R #####
 # Kuan-lin Huang @ WashU 2015 Oct
-# run outlier analysis for 3 cancer types and plot the result
+# run pQTL analysis for 3 cancer types and plot the result
 
 ##### dependencies #####
-setwd("/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_outlier")
+setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/mutation_impact/")
 source("/Users/khuang/bin/LIB_exp.R")
-source("/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_outlier/outlier.R")
-system("mkdir logs")
-logFile = paste("logs/", date, "_outlier_analysis.log", sep="")
-sink(file=logFile)
+source("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/mutation_impact/mutation_impact.R")
+
+# system("mkdir logs")
+# logFile = paste("logs/", date, "_mutation_impact_analysis.log", sep="")
+# sink(file=logFile)
 #sink(file=NULL)
 kinaseList = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_files/2014-12-05_CPTAC_Kinase.MATRIX.v3b5_sheet1_genes.list', header=FALSE, stringsAsFactors = F)
 drugList = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_files/gene_drug_list/Premed_raw_databases/drugBank/all_target_ids_all.txt.human.tsv_hugoified.tsv_list.txt_list', header=FALSE, stringsAsFactors = F)
@@ -17,10 +18,16 @@ druggable = as.vector(t(drugList))
 
 # function to format CDAP proteome data processed by Kuan
 format_pro = function(Pro.m){
-  colnames(Pro.m) = sub(".01A.Unshared.Log.Ratio","",colnames(Pro.m)) 
-  colnames(Pro.m) = sub(".01A.1.Unshared.Log.Ratio","",colnames(Pro.m))
-  BRCA77 = read.table(row.names=1,header=TRUE, sep="\t", file='/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_105BRCA/BRCA105_proteome/201507/BRCA77_unimodal_proteome-ratio-norm_exp_collapsed.txt')
-  Pro.m = Pro.m[,colnames(Pro.m) %in% c(colnames(BRCA77),"Gene")]
+  colnames(Pro.m) = sub(".Unshared.Log.Ratio","",colnames(Pro.m)) 
+  Pro.m.d = Pro.m[Pro.m$Gene %in% druggable,]
+  row.names(Pro.m.d) = Pro.m.d$Gene
+  Pro.m.dn = Pro.m.d[,-1]
+  return(Pro.m.dn)
+}
+
+format_ov = function(Pro.m){
+  colnames(Pro.m) = sub(".Unshared.Log.Ratio","",colnames(Pro.m))
+  colnames(Pro.m) = sub("^X","",colnames(Pro.m))
   Pro.m.d = Pro.m[Pro.m$Gene %in% druggable,]
   row.names(Pro.m.d) = Pro.m.d$Gene
   Pro.m.dn = Pro.m.d[,-1]
@@ -32,6 +39,7 @@ format_crc = function(Pro.m){
   Gene = Pro.m$Gene
   Pro.m = as.matrix(Pro.m[,-1])
   colnames(Pro.m) = sub(".Unshared.Spectral.Counts","",colnames(Pro.m)) 
+  colnames(Pro.m) = sub("\\.\\d\\d$","",colnames(Pro.m)) 
   
   # quantile normalization using function from limma and log2 transformation: Nature CRC proteogenomics 2014
   Pro.mn = normalizeQuantiles(Pro.m,ties=T)
@@ -67,104 +75,69 @@ format_RSEM = function(RSEM.m){ # should be normalized using the 75% quantile me
   return(RSEM.m.d.n)
 }
 
+format_mut = function(mut){
+  colnames(mut) = sub("TCGA.","", colnames(mut))
+  colnames(mut) = sub(".01",".01A", colnames(mut))
+  return(mut)
+}
 ##### BRCA #####
-### CNV ###
-BRCA_CNV = read.table(na.strings="NA ",row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_CNV/BRCA_105_CNV.txt")
-# "NA " fail, be careful next time about the new space character
-BRCA_CNV.d = normalize_CNV(BRCA_CNV)
-BRCA_CNV_druggable = find_outlier(BRCA_CNV.d, name = "BRCA druggable CNV")
-
-### RNA ###
-BRCA_RNA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RNA/TCGA_Breast_BI_RSEM.tsv.parsed_hugoified")
-BRCA_RNA.d = format_RSEM(BRCA_RNA)
-BRCA_RNA_druggable = find_outlier(BRCA_RNA.d, name = "BRCA druggable RNA")
+### Mutation matrix ###
+BRCA_mut = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201510_pancan_somatic/BRCA_proteomic.maf.matrix.txt")
+BRCA_mut_s = format_mut(BRCA_mut)
+brcaGenes = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "MLL3")
 
 ### Proteome ###
 BRCA_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/BRCA/TCGA_Breast_BI_Proteome_CDAP.r2/TCGA_Breast_BI_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 BRCA_Pro.d = format_pro(BRCA_Pro)
-BRCA_Pro_druggable = find_outlier(BRCA_Pro.d, name = "BRCA druggable proteome")
+BRCA_diff_exp = find_diff_exp(BRCA_mut_s,BRCA_Pro.d,name="BRCA Proteome")
 
 ### Phosphoproteome ###
 BRCA_Pho = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/BRCA/TCGA_Breast_BI_Phosphoproteome_CDAP.r2/TCGA_Breast_BI_Phosphoproteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 BRCA_Pho.d = format_pro(BRCA_Pho)
-BRCA_Pho_druggable = find_outlier(BRCA_Pho.d, name = "BRCA druggable phosphoproteome")
+BRCA_pho_diff_exp = find_diff_exp(BRCA_mut_s,BRCA_Pho.d,name="BRCA Phosphoproteome")
 
 ### all levels ###
 # do this later, may be more benefitial to do the all outlier table and summarize that instead
 
 ##### OV #####
-### CNV ###
-OV_CNV = read.table(na.strings="NA ",row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_CNV/OV_173_CNV.txt")
-OV_CNV.d = normalize_CNV(OV_CNV)
-OV_CNV_druggable = find_outlier(OV_CNV.d, name = "OV druggable CNV")
-
-### RNA ###
-OV_RNA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RNA/TCGA_OV_RSEM.tsv.parsed_hugoified")
-OV_RNA.d = format_RSEM(OV_RNA)
-OV_RNA_druggable = find_outlier(OV_RNA.d, name = "OV druggable RNA")
+### Mutation matrix ###
+OV_mut = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201510_pancan_somatic/OV_proteomic.maf.matrix.txt")
+OV_mut_s = format_mut(OV_mut)
+ovGenes = c("TP53", "NF1", "KRAS", "BRCA1", "CDK12")
 
 ### Proteome ###
 OV_JHU_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/JHU_Proteome_CDAP.r2/TCGA_Ovarian_JHU_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 OV_PNNL_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/PNNL_Proteome_CDAP.r2/TCGA_Ovarian_PNNL_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 
-OV_JHU_Pro.d = format_pro(OV_JHU_Pro)
-OV_PNNL_Pro.d = format_pro(OV_PNNL_Pro)
+OV_JHU_Pro.d = format_ov(OV_JHU_Pro)
+OV_PNNL_Pro.d = format_ov(OV_PNNL_Pro)
 
-OV_JHU_Pro_druggable = find_outlier(OV_JHU_Pro.d, name = "OV JHU druggable proteome")
-OV_PNNL_Pro_druggable = find_outlier(OV_PNNL_Pro.d, name = "OV PNNL druggable proteome")
+OV_JHU_diff_exp = find_diff_exp(OV_mut_s,OV_JHU_Pro.d,name="OV JHU Proteome")
+OV_PNNL_diff_exp = find_diff_exp(OV_mut_s,OV_PNNL_Pro.d,name="OV PNNL Proteome")
 
 ### Phosphoproteome ###
 OV_Pho = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/PNNL_Phosphoproteome_CDAP.r2/TCGA_Ovarian_PNNL_Phosphoproteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
-OV_Pho.d = format_pro(OV_Pho)
-OV_Pho_druggable = find_outlier(OV_Pho.d, name = "OV PNNL druggable phosphoproteome")
+OV_Pho.d = format_ov(OV_Pho)
+OV_Pho_diff_exp = find_diff_exp(OV_mut_s,OV_Pho.d,name="OV PNNL Phosphoproteome")
 
 ### Glycoproteome ###
 OV_Gly = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/JHU_Glycoproteome_CDAP.r2/TCGA_Ovarian_JHU_Glycoproteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
-OV_Gly.d = format_pro(OV_Gly)
-OV_Gly_druggable = find_outlier(OV_Gly.d, name = "OV JHU druggable glycoproteome")
+OV_Gly.d = format_ov(OV_Gly)
+OV_Gly_diff_exp = find_diff_exp(OV_mut_s,OV_Gly.d,name="OV JHU Glycoproteome")
 
 ### merging the two proteome? ###
 ### all levels ###
 
 ##### CRC #####
-### CNV ###
-CRC_CNV = read.table(na.strings="NA ",row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_CNV/CRC_88_CNV.txt")
-CRC_CNV.d = normalize_CNV(CRC_CNV)
-CRC_CNV_druggable = find_outlier(CRC_CNV.d, name = "CRC druggable CNV")
-
-### RNA ###
-CRC_RNA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RNA/TCGA_COADREAD_RSEM_combined.tsv.parsed_hugoified")
-CRC_RNA.d = format_RSEM(CRC_RNA)
-CRC_RNA_druggable = find_outlier(CRC_RNA.d, name = "CRC druggable RNA")
-
+### Mutation matrix ###
+CRC_mut = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201510_pancan_somatic/COADREAD_proteomic.maf.matrix.txt")
+CRC_mut_s = format_mut(CRC_mut)
+crcGenes = c("TP53","KRAS","APC","PIK3CA","SMAD4")
 ### Proteome ###
 CRC_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/CRC/VU_Proteome_CDAP.r2/TCGA_Colon_VU_Proteome_CDAP.r2.spectral_counts.tsv_hugoified.unshared_spectal_counts.txt")
 # spectral count: look into the paper to see how to normalize the count data
 CRC_Pro.d = format_crc(CRC_Pro)
-CRC_Pro_druggable = find_outlier(CRC_Pro.d, name = "CRC druggable proteome")
+
+CRC_diff_exp = find_diff_exp(CRC_mut_s,CRC_Pro.d,name="CRC Proteome", geneList =crcGenes)
 
 ### all levels ###
-
-sink(file=NULL)
-
-##### testing codes#####
-
-if (FALSE){
-  m1 = melt(BRCA_Pro_druggable$outlier)
-  m2 = melt(BRCA77_druggable$outlier)
-  m3 = merge(m1,m2,by=c("Var1","Var2"))
-  m3 = m3[complete.cases(m3),]
-  nrow(m3[m3$value.x & m3$value.y,])
-  nrow(m3[m3$value.x,])
-  nrow(m3[m3$value.y,])
-  
-  m1 = melt(BRCA_Pro_druggable$outlier_zscore)
-  m2 = melt(BRCA77_druggable$outlier_zscore)
-  m3 = merge(m1,m2,by=c("Var1","Var2"))
-  m3 = m3[complete.cases(m3),]
-  cor(m3$value.x,m3$value.y)
-  nrow(m3[m3$value.x & m3$value.y,])
-  nrow(m3[m3$value.x,])
-  nrow(m3[m3$value.y,])
-  BRCA77_druggable$outlier
-}
