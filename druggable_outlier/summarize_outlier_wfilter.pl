@@ -8,10 +8,9 @@ use warnings;
 use Time::Piece;
 
 my $date = localtime->strftime('%Y-%m-%d');
-my $outfile = "results/".$date."_all_outliers.txt";
-#my $outfile_filter = "results/".$date."_filtered_outliers.txt";
+my $outfile_filter = "results/".$date."_filtered_outliers.txt";
 
-my $usage = 'perl summarize_outlier.pl  
+my $usage = 'perl summarize_outlier_wfilter.pl  
 ';
  
 die $usage , unless @ARGV == 0;
@@ -24,7 +23,7 @@ my $fDate = "2015-11-03/2015-11-03";
 
 my @cancers = ("BRCA", "CRC", "OV PNNL", "OV JHU");
 
-my $gene2score = {}; # ex: sample -> datatype -> gene -> score;
+my $gene2score = {}; # ex: datatype -> sample -> gene -> score;
 my $outliers = {}; # ex: datatype -> gene -> outlier; 
 #my $gene2drug = {}; # ex. gene -> drug;
 my $samples = {}; # ex: datatype -> sample -> has_outlier;
@@ -44,6 +43,7 @@ if ($cancer eq "OV PNNL" || $cancer eq "OV JHU"){
 	$Mut_f = "OV_proteomic_maf_dmut.txt";
 	$CNV_f = "_KH_OV\ druggable\ CNV\ normalized_outlier_score_table.txt";
 	$RNA_f = "_KH_OV\ druggable\ RNA\ normalized_outlier_score_table.txt";
+	$RPPA_f = "_KH_OV\ druggable\ RPPA_outlier_score_table.txt";
 }
 # global variables
 
@@ -112,7 +112,17 @@ sub read_score {
 
 		for (my $i  = 1; $i < $#F; $i++){
 			if ($F[$i] eq "NA"){next;}
-			elsif ($F[$i] >= 1.5){ $outlier_num++; $samples -> {$type} -> {$G[$i]} = 1}
+			elsif ($F[$i] >= 1.5){ 
+				$gene2score -> {$type} -> {$G[$i]} -> {$gene} = $F[$i];
+				if ($type eq "CNV"){
+					my $RNAs = $gene2score -> {"RNA"} -> {$G[$i]} -> {$gene};
+					my $PROs = $gene2score -> {"PRO"} -> {$G[$i]} -> {$gene};
+					if ($RNAs <=1 && $PROs <=1){next;}
+				}
+				$outlier_num++; 
+				$samples -> {$type} -> {$G[$i]} = 1;
+
+			}
 		} 
 		$outliers -> {$type} -> {$gene} = $outlier_num;
 	} 
@@ -131,6 +141,9 @@ sub read_RPPA_score {
 		chomp;
 		my @F = split "\t", $_;
 		my $gene = $F[0];
+		$gene =~ s/_.*//;
+		$gene =~ s/ .*//;
+
 		my $outlier_num = 0;
 		$gene_set{$gene}=1;
 
@@ -138,7 +151,15 @@ sub read_RPPA_score {
 			if ($F[$i] eq "NA"){next;}
 			elsif ($F[$i] >= 1.5){ $outlier_num++; $samples -> {$type} -> {$G[$i]} = 1}
 		} 
-		$outliers -> {$type} -> {$gene} = $outlier_num;
+		# pick the highest count RPPA marker
+		if (exists($outliers -> {$type} -> {$gene})){
+			my $curr_count = $outliers -> {$type} -> {$gene};
+			if ($outlier_num > $curr_count){
+				$outliers -> {$type} -> {$gene} = $outlier_num;
+			}
+		} else {
+			$outliers -> {$type} -> {$gene} = $outlier_num;
+		}
 	} 
 	close (IN);
 }

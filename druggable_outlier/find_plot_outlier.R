@@ -15,7 +15,7 @@ drugList = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_
 kinome = as.vector(t(kinaseList))
 druggable = as.vector(t(drugList))
 
-# function to format CDAP proteome data processed by Kuan
+# function to format processed CDAP proteome data 
 format_pro = function(Pro.m){
   colnames(Pro.m) = sub(".01A.Unshared.Log.Ratio","",colnames(Pro.m)) 
   colnames(Pro.m) = sub(".01A.1.Unshared.Log.Ratio","",colnames(Pro.m))
@@ -75,9 +75,9 @@ BRCA_CNV.d = normalize_CNV(BRCA_CNV)
 BRCA_CNV_druggable = find_outlier(BRCA_CNV.d, name = "BRCA druggable CNV")
 
 ### RNA ###
-BRCA_RNA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RNA/TCGA_Breast_BI_RSEM.tsv.parsed_hugoified")
-BRCA_RNA.d = format_RSEM(BRCA_RNA)
-BRCA_RNA_druggable = find_outlier(BRCA_RNA.d, name = "BRCA druggable RNA")
+BRCA_RNA = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_mRNA_formatted.txt",sep=""))
+BRCA_RNA.d = BRCA_RNA[row.names(BRCA_RNA) %in% druggable,]
+BRCA_RNA_druggable = find_outlier(BRCA_RNA.d, name = "BRCA druggable RNA") # too much outliers
 
 ### Proteome ###
 BRCA_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/BRCA/TCGA_Breast_BI_Proteome_CDAP.r2/TCGA_Breast_BI_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
@@ -88,6 +88,13 @@ BRCA_Pro_druggable = find_outlier(BRCA_Pro.d, name = "BRCA druggable proteome")
 BRCA_Pho = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/BRCA/TCGA_Breast_BI_Phosphoproteome_CDAP.r2/TCGA_Breast_BI_Phosphoproteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
 BRCA_Pho.d = format_pro(BRCA_Pho)
 BRCA_Pho_druggable = find_outlier(BRCA_Pho.d, name = "BRCA druggable phosphoproteome")
+
+### RPPA ###
+BRCA_RPPA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RPPA/TCGA_Breast_BI_RPPA.tsv")
+row.names(BRCA_RPPA) = BRCA_RPPA$Composite.Element.REF
+BRCA_RPPA = as.matrix(BRCA_RPPA[,-1])
+BRCA_RPPA_outlier = find_outlier(BRCA_RPPA, name = "BRCA RPPA")
+
 
 ### all levels ###
 # do this later, may be more benefitial to do the all outlier table and summarize that instead
@@ -123,6 +130,12 @@ OV_Gly = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/pro
 OV_Gly.d = format_pro(OV_Gly)
 OV_Gly_druggable = find_outlier(OV_Gly.d, name = "OV JHU druggable glycoproteome")
 
+### RPPA ###
+CRC_RPPA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RPPA/TCGA_OV_RPPA.tsv")
+row.names(OV_RPPA) = OV_RPPA$Composite.Element.REF
+OV_RPPA = as.matrix(OV_RPPA[,-1])
+OV_RPPA_outlier = find_outlier(OV_RPPA, name = "OV RPPA")
+
 ### merging the two proteome? ###
 ### all levels ###
 
@@ -143,6 +156,11 @@ CRC_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/pr
 CRC_Pro.d = format_crc(CRC_Pro)
 CRC_Pro_druggable = find_outlier(CRC_Pro.d, name = "CRC druggable proteome")
 
+### RPPA ###
+CRC_RPPA = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RPPA/TCGA_COADREAD_RPPA.tsv")
+row.names(CRC_RPPA) = CRC_RPPA$Composite.Element.REF
+CRC_RPPA = as.matrix(CRC_RPPA[,-1])
+CRC_RPPA_outlier = find_outlier(CRC_RPPA, name = "CRC RPPA")
 ### all levels ###
 
 sink(file=NULL)
