@@ -78,13 +78,13 @@ format_RSEM = function(RSEM.m){ # should have been normalized using the 75% quan
   return(RSEM.m)
 }
 
-format_RPPA = function(m){ #TODO
-  row.names(m) = make.names(RSEM.m$Hybridization.REF, unique=T)
-  RSEM.m = RSEM.m[,-1]
-  RSEM.m = as.matrix(RSEM.m)
-  #RSEM.m.d.n = log2(RSEM.m.d.n+1) # simple log2 transform
-  return(RSEM.m)
-}
+# format_RPPA = function(m){ #TODO
+#   row.names(m) = make.names(RSEM.m$Hybridization.REF, unique=T)
+#   RSEM.m = RSEM.m[,-1]
+#   RSEM.m = as.matrix(RSEM.m)
+#   #RSEM.m.d.n = log2(RSEM.m.d.n+1) # simple log2 transform
+#   return(RSEM.m)
+# }
 
 format_mut = function(mut){
   colnames(mut) = sub("TCGA.","", colnames(mut))
@@ -94,6 +94,10 @@ format_mut = function(mut){
 
 
 ##### Pre-processing #####
+
+RPPA = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/collaborations/TCPA_2015-10-30/TCGA-PANCAN16-RBN-Trans-Gene_sampleProbe_matrix.tsv")
+colnames(RPPA) = sub("TCGA.","",colnames(RPPA))
+colnames(RPPA) = paste(colnames(RPPA),".01A",sep="")
 ##### BRCA #####
 
 ### Proteome ###
@@ -102,6 +106,10 @@ BRCA_Pro.f = format_brca(BRCA_Pro) # retained 77 samples
 write.table(BRCA_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PRO_formatted.txt",sep=""))
 BRCA_Pro.n = normalize_by_sample(BRCA_Pro.f)
 write.table(BRCA_Pro.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PRO_formatted_normalized.txt",sep=""))
+
+### RPPA ###
+BRCA_RPPA = RPPA[,colnames(RPPA) %in% colnames(BRCA_Pro.f)]
+write.table(BRCA_RPPA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_RPPA_formatted.txt",sep=""))
 
 ### Mutation matrix ###
 BRCA_mut = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201510_pancan_somatic/BRCA_proteomic.maf.matrix.txt")
@@ -146,6 +154,12 @@ OV_CNV.f = format_CNV(OV_CNV)
 write.table(OV_CNV.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_CNV_formatted.txt",sep=""))
 OV_CNV.n = normalize_CNV(OV_CNV.f)
 write.table(OV_CNV.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_CNV_formatted_normalized.txt",sep=""))
+
+### RPPA ###
+RPPA2 = RPPA
+colnames(RPPA2) = sub("\\.","-",colnames(RPPA2))
+OV_RPPA = RPPA2[,colnames(RPPA2) %in% colnames(OV_CNV.f)]
+write.table(OV_RPPA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_RPPA_formatted.txt",sep=""))
 
 ### RNA ###
 OV_RNA = read.table(header=TRUE, sep="\t", check.names=F, file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_RNA/TCGA_OV_RSEM.tsv.parsed_hugoified")
@@ -211,6 +225,10 @@ CRC_Pro.f = format_crc(CRC_Pro)
 write.table(CRC_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_PRO_formatted.txt",sep=""))
 CRC_Pro.n = normalize_crc(CRC_Pro.f)
 write.table(CRC_Pro.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_PRO_formatted_normalized.txt",sep=""))
+
+### RPPA ###
+CRC_RPPA = RPPA[,colnames(RPPA) %in% colnames(CRC_Pro.f)]
+write.table(CRC_RPPA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_RPPA_formatted.txt",sep=""))
 
 ##### TO-DO #####
 ##### RPPA #####
