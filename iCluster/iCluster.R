@@ -2,19 +2,13 @@
 # Kuan-lin Huang @ WashU 2015 Oct
 # cross level clustering between CNV, RNA, and Proteome data
 
-setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/cross_correlation/")
-source("/Users/khuang/bin/LIB_exp.R")
+#setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/cross_correlation/")
+source("~/bin/LIB_exp.R")
 
-baseD = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+baseD = "/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer/"
+setwd(paste(baseD, "pan3can_analysis/iCluster", sep=""))
 
-library("iCluster")
-str(breast.chr17)
-fit=iCluster(breast.chr17, k=4, lambda=c(0.2,0.2))
-plotiCluster(fit=fit, label=rownames(breast.chr17[[2]]))
-compute.pod(fit)
-plotHeatmap(fit=fit, data=breast.chr17)
-
-data(coord)
+#requirements
 
 library(iCluster)
 library(caTools)
@@ -22,6 +16,8 @@ library(gdata)
 library(gtools)
 library(gplots)
 library(lattice)
+
+# example
 data(gbm)
 str(gbm)
 #setting the penalty parameter lambda=0 returns non-sparse fit

@@ -2,11 +2,14 @@
 # Kuan-lin Huang @ WashU 2015 Oct
 # cross level clustering between CNV, RNA, and Proteome data
 
-setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
-source("/Users/khuang/bin/LIB_exp.R")
+#setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
+setwd("/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
+#source("/Users/khuang/bin/LIB_exp.R")
+source("~/bin/LIB_exp.R")
 
 system("mkdir clusterRdata")
-baseD = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+#baseD = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+baseD = "/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer"
 
 # libraries
 library(iClusterPlus)
