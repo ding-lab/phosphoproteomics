@@ -2,11 +2,14 @@
 # Kuan-lin Huang @ WashU 2015 Oct
 # cross level clustering between CNV, RNA, and Proteome data
 
-setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
-source("/Users/khuang/bin/LIB_exp.R")
+#setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
+setwd("/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
+#source("/Users/khuang/bin/LIB_exp.R")
+source("~/bin/LIB_exp.R")
 
 system("mkdir clusterRdata")
-baseD = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+#baseD = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+baseD = "/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer"
 
 # libraries
 library(iClusterPlus)
@@ -15,7 +18,7 @@ library(gplots)
 library(lattice)
 
 # resources
-cancer_genes = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_files/cgenes_and_druggable.list', header=FALSE, stringsAsFactors = F)
+cancer_genes = read.table(file='/gscmnt/gc2524/dinglab/Proteomics/projects/reference_files/cgenes_and_druggable.list', header=FALSE, stringsAsFactors = F)
 cgenes = as.vector(t(cancer_genes))
 
 # functions
@@ -40,7 +43,8 @@ BRCA_CNV.s = BRCA_CNV[,s]
 BRCA_RNA.s = BRCA_RNA[,s]
 BRCA_PRO.s = BRCA_PRO[,s]
 
-# feature selection
+#preProcess = function(mut =, cnv = , rna =, pro = )
+# pre-clustering feature selection
 BRCA_mut.s.ch = unfactorize(BRCA_mut.s[row.names(BRCA_mut.s) %in% cgenes,])
 BRCA_mut.s.n = BRCA_mut.s.ch
 for (i in 1:nrow(BRCA_mut.s.ch)){
@@ -84,6 +88,7 @@ if (sample_aligned){
                           type=c("binomial","gaussian","gaussian","gaussian"),
                           lambda=c(0.04,0.90,0.90,0.90),K=2,maxiter=10)
   
+  #plotiCluster = function(fit = ){}
   bw.col = colorpanel(2,low="white",high="black")
   col.scheme = alist()
   col.scheme[[1]] = bw.col
@@ -100,6 +105,7 @@ if (sample_aligned){
 }
 
 ##### model tuning #####
+#tune_icluster = function(){}
 set.seed(123)
 date()
 for(k in 1:5){
@@ -109,6 +115,41 @@ for(k in 1:5){
   save(cv.fit, file=paste("clusterRdata/cv.fit.k",k,".Rdata",sep=""))
 }
 date()
+
+
+# # model selection
+# output=alist()
+# files=grep("cv.fit",dir())
+# for(i in 1:length(files)){
+#   load(dir()[files[i]])
+#   output[[i]]=cv.fit
+#   }
+# nLambda = nrow(output[[1]]$lambda)
+# nK = length(output)
+# BIC = getBIC(output)
+# devR = getDevR(output)
+# 
+# minBICid = apply(BIC,2,which.min)
+# devRatMinBIC = rep(NA,nK)
+# for(i in 1:nK){
+#   devRatMinBIC[i] = devR[minBICid[i],i]
+#   }
+# 
+# plot(1:(nK+1),c(0,devRatMinBIC),type="b",xlab="Number of clusters (K+1)",
+#        ylab="%Explained Variation")
+# 
+# chr=unlist(strsplit(colnames(gbm.cn),"\\."))
+# chr=chr[seq(1,length(chr),by=2)]
+# chr=gsub("chr","",chr)
+# chr=as.numeric(chr)
+
+# #truncate the values for a better image plot
+#   cn.image=gbm.cn
+# cn.image[cn.image>1.5]=1.5
+# cn.image[cn.image< -1.5]= -1.5
+# exp.image=gbm.exp
+# exp.image[exp.image>2.5]=2.5
+# exp.image[exp.image< -2.5]= -2.5
 
 # ##### example data #####
 # data(gbm)
