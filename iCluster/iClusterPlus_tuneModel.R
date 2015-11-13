@@ -5,7 +5,7 @@
 
 setwd("/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
 source("~/bin/LIB_exp.R")
-baseD = "/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer"
+baseD = "/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer/"
 cancer_genes = read.table(file='/gscmnt/gc2524/dinglab/Proteomics/projects/reference_files/cgenes_and_druggable.list', header=FALSE, stringsAsFactors = F)
 
 
@@ -118,7 +118,7 @@ if (sample_aligned){
   cv.fit = tune.iClusterPlus(cpus=12,dt1=tBRCA_mut,dt2=tBRCA_CNV,dt3=tBRCA_RNA,dt4=tBRCA_PRO,
                              type=c("binomial","gaussian","gaussian","gaussian"),
                              scale.lambda=c(0.05,0.20,1.00,0.80),n.lambda=307,maxiter=30)
-  save(cv.fit, file=paste("clusterRdata/cv.fit.k",cancer, "_",k,".Rdata",sep=""))
+  save(cv.fit, file=paste("clusterRdata/cv.fit.k_lambda005_020_100_080", "_",k,".Rdata",sep=""))
   
   date()
 } else {
