@@ -25,7 +25,7 @@ name=args[1]
 
 # functions
 unfactorize = function(df){
-  for(i in which(sapply(df, class) == "factor")) df[[i]] = as.character(df[[i]])
+  for(i in which(sapply(df, class) == "factor")) {df[[i]] = as.character(df[[i]])}
   return(df)
 }
 
@@ -96,4 +96,4 @@ tPRO[is.na(tPRO)] = mean(tPRO,na.rm=T)
 
 sample_aligned = all(rownames(tmut)==rownames(tCNV)) && all(rownames(tmut)==rownames(tRNA)) && all(rownames(tmut)==rownames(tPRO))
 
-save.image(file=paste("clusterRdata/",pd,"_",name,".Rdata",sep="")
+save.image(file=paste("clusterRdata/",date,"_",name,".Rdata",sep=""))
