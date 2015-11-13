@@ -5,7 +5,7 @@
 
 
 setwd("/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
-source("~/bin/LIB_exp.R")
+source("/gscuser/khuang/bin/LIB_exp.R")
 baseD = "/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer/"
 cancer_genes = read.table(file='/gscmnt/gc2524/dinglab/Proteomics/projects/reference_files/cgenes_and_druggable.list', header=FALSE, stringsAsFactors = F)
 
@@ -19,11 +19,9 @@ cgenes = as.vector(t(cancer_genes))
 
 system("mkdir clusterRdata")
 
-name = "BRCA"
-
-cat("############################")
-cat(date())
-cat(paste("Tuning iCluster model in BRCA of cluster number: ",k)) 
+# variables that may change
+args=commandArgs(TRUE)
+name=args[1]
 
 # functions
 unfactorize = function(df){
