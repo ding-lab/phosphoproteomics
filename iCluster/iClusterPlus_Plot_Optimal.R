@@ -267,6 +267,10 @@ files=grep("cv.fit",dir("clusterRdata"))
 for(i in 1:length(files)){
   load(paste("clusterRdata/", dir("clusterRdata")[files[i]], sep=""))
   output[[i]]=cv.fit
+  #   plotHeatmap_gg(fit=fit.k,datasets=list(tBRCA_clin,tBRCA_mut,tBRCA_CNV,tBRCA_RNA,tBRCA_PRO), fn = fn,
+  #                  dataset.names = c("CLINICAL","MUT","CNV","RNA","PRO"),
+  #                  type=c("clinical","binomial","gaussian","gaussian","gaussian"),
+  #                  row.order=c(F,T,T,T,T),sparse=c(F,T,T,T,T), row.names=c(T,T,F,F,F))
 }
 nLambda = nrow(output[[1]]$lambda)
 nK = length(output)
