@@ -27,7 +27,7 @@ library(lattice)
 
 args=commandArgs(TRUE)
 
-k=args[1]
+k=as.numeric(args[1])
 #cancer=args[2]
 
 cat("############################")

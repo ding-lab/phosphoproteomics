@@ -291,13 +291,18 @@ p = p + labs(x="Number of clusters", y="% explained variation") + theme_bw() +
 p 
 ggsave(file=fn, width=5, height=4, useDingbats=FALSE)
 
+for (k in 1:nK){
+  best.fit=output[[k]]$fit[[which.min(BIC[,k])]]
+  n=k+1
+  fn = paste(pd, n, "-clusters_lambda005_020_100_080_top_ggHM.pdf", sep="_")
+  plotHeatmap_gg(fit=fit.k,datasets=list(tclin,tmut,tCNV,tRNA,tPRO), fn = fn,
+                 dataset.names = c("CLINICAL","MUT","CNV","RNA","PRO"),
+                 type=c("clinical","binomial","gaussian","gaussian","gaussian"),
+                 row.order=c(F,T,T,T,T),sparse=c(F,T,T,T,T), row.names=c(T,T,F,F,F))
+}
+
+
 date()
-
-
-#   plotHeatmap_gg(fit=fit.k,datasets=list(tBRCA_clin,tBRCA_mut,tBRCA_CNV,tBRCA_RNA,tBRCA_PRO), fn = fn,
-#                  dataset.names = c("CLINICAL","MUT","CNV","RNA","PRO"),
-#                  type=c("clinical","binomial","gaussian","gaussian","gaussian"),
-#                  row.order=c(F,T,T,T,T),sparse=c(F,T,T,T,T), row.names=c(T,T,F,F,F))
 
 # for (k in 1:10){
 #   
@@ -456,22 +461,22 @@ date()
 # date()
 # 
 # model selection
-output=alist()
-files=grep("cv.fit",dir())
-for(i in 1:length(files)){
-  load(dir()[files[i]])
-  output[[i]]=cv.fit
-}
-nLambda = nrow(output[[1]]$lambda)
-nK = length(output)
-BIC = getBIC(output)
-devR = getDevR(output)
-
-minBICid = apply(BIC,2,which.min)
-devRatMinBIC = rep(NA,nK)
-for(i in 1:nK){
-  devRatMinBIC[i] = devR[minBICid[i],i]
-}
+# output=alist()
+# files=grep("cv.fit",dir())
+# for(i in 1:length(files)){
+#   load(dir()[files[i]])
+#   output[[i]]=cv.fit
+# }
+# nLambda = nrow(output[[1]]$lambda)
+# nK = length(output)
+# BIC = getBIC(output)
+# devR = getDevR(output)
+# 
+# minBICid = apply(BIC,2,which.min)
+# devRatMinBIC = rep(NA,nK)
+# for(i in 1:nK){
+#   devRatMinBIC[i] = devR[minBICid[i],i]
+# }
 # 
 # plot(1:(nK+1),c(0,devRatMinBIC),type="b",xlab="Number of clusters (K+1)",
 #        ylab="%Explained Variation")
