@@ -265,7 +265,7 @@ date()
 output=alist()
 files=grep("cv.fit",dir("clusterRdata"))
 for(i in 1:length(files)){
-  load(dir("clusterRdata")[files[i]])
+  load(paste("clusterRdata/", dir("clusterRdata")[files[i]], sep=""))
   output[[i]]=cv.fit
 }
 nLambda = nrow(output[[1]]$lambda)
