@@ -114,7 +114,7 @@ if (sample_aligned){
   set.seed(123) # the greedy algorithm requires setting seed
   date()
   
-  cv.fit = tune.iClusterPlus(cpus=12,dt1=tBRCA_mut,dt2=tBRCA_CNV,dt3=tBRCA_RNA,dt4=tBRCA_PRO,
+  cv.fit = tune.iClusterPlus(cpus=12,dt1=tBRCA_mut,dt2=tBRCA_CNV,dt3=tBRCA_RNA,dt4=tBRCA_PRO, K=k,
                              type=c("binomial","gaussian","gaussian","gaussian"),
                              scale.lambda=c(0.05,0.20,1.00,0.80),n.lambda=307,maxiter=30)
   save(cv.fit, file=paste("clusterRdata/cv.fit.k_lambda005_020_100_080", "_",k,".Rdata",sep=""))
