@@ -133,11 +133,11 @@ plotHeatmap_gg = function(fit, datasets, dataset.names, type=c("gaussian","binom
                           fn="iCluster_heatmap_gg.pdf", height=10, width=14){
   
   m=length(datasets)  
-  if(is.null(row.order)){row.order=rep(T,m)}  
-#   if(is.null(scale)){scale=rep("none",m)}
-#   if(is.null(sparse)){sparse=rep(F,m)}
-#   if(is.null(cap)){cap=rep(F,m)}
-#   if(is.null(plot.chr)){plot.chr=rep(F,m)}
+  if(is.null(row.order)){row.order=rep(T,m)}
+  if(is.null(sparse)){sparse=rep(F,m)}
+  #   if(is.null(scale)){scale=rep("none",m)}  
+  #   if(is.null(cap)){cap=rep(F,m)}
+  #   if(is.null(plot.chr)){plot.chr=rep(F,m)}
   
   #get clusters 
   clusters=fit$clusters
@@ -295,7 +295,7 @@ for (k in 1:nK){
   best.fit=output[[k]]$fit[[which.min(BIC[,k])]]
   n=k+1
   fn = paste(pd, n, "-clusters_lambda005_020_100_080_top_ggHM.pdf", sep="_")
-  plotHeatmap_gg(fit=fit.k,datasets=list(tclin,tmut,tCNV,tRNA,tPRO), fn = fn,
+  plotHeatmap_gg(fit=best.fit,datasets=list(tclin,tmut,tCNV,tRNA,tPRO), fn = fn,
                  dataset.names = c("CLINICAL","MUT","CNV","RNA","PRO"),
                  type=c("clinical","binomial","gaussian","gaussian","gaussian"),
                  row.order=c(F,T,T,T,T),sparse=c(F,T,T,T,T), row.names=c(T,T,F,F,F))
