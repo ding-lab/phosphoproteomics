@@ -7,7 +7,7 @@ setwd("/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer/pan3can_analy
 source("~/bin/LIB_exp.R")
 baseD = "/gscmnt/gc2524/dinglab/Proteomics/projects/CPTAC_pan3Cancer"
 cancer_genes = read.table(file='/gscmnt/gc2524/dinglab/Proteomics/projects/reference_files/cgenes_and_druggable.list', header=FALSE, stringsAsFactors = F)
-
+load("clusterRdata/2015-11-13_BRCA.Rdata")
 
 if (FALSE){ # for use on my macpro
   setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/iCluster")
@@ -16,8 +16,6 @@ if (FALSE){ # for use on my macpro
   cancer_genes = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_files/cgenes_and_druggable.list', header=FALSE, stringsAsFactors = F)
 }
 cgenes = as.vector(t(cancer_genes))
-
-system("mkdir clusterRdata")
 
 # libraries
 library(iClusterPlus)
@@ -256,8 +254,6 @@ plotHeatmap_gg = function(fit, datasets, dataset.names, type=c("gaussian","binom
 
 ##### MAIN CODE #####
 
-load("") 
-
 ##### loop through different ks here ####
 BICs = vector("list")
 dev.ratios = vector("list")
@@ -269,7 +265,7 @@ date()
 output=alist()
 files=grep("cv.fit",dir("clusterRdata"))
 for(i in 1:length(files)){
-  load(dir()[files[i]])
+  load(dir("clusterRdata")[files[i]])
   output[[i]]=cv.fit
 }
 nLambda = nrow(output[[1]]$lambda)
@@ -283,61 +279,72 @@ for(i in 1:nK){
   devRatMinBIC[i] = devR[minBICid[i],i]
 }
 
-
-if (sample_aligned){
-  for (k in 1:10){
-   
-    fit.k = iClusterPlus(dt1=tBRCA_mut,dt2=tBRCA_CNV,dt3=tBRCA_RNA,dt4=tBRCA_PRO,
-                            type=c("binomial","gaussian","gaussian","gaussian"),
-                            lambda=c(0.05,0.20,1.00,0.80),K=k,maxiter=30)
-    
-    n = k + 1
-    #plotiCluster = function(fit = ){}
-    bw.col = colorpanel(2,low="white",high="black")
-    col.scheme = alist()
-    col.scheme[[1]] = bw.col
-    col.scheme[[2]] = bluered(256)
-    col.scheme[[3]] = bluered(256)
-    col.scheme[[4]] = bluered(256)
-    fn = paste(pd, n, "clusters_lambda005_020_100_080_HM.pdf", sep="_")
-    pdf(fn, useDingbats=FALSE)
-    plotHeatmap(fit=fit.k,datasets=list(tBRCA_mut,tBRCA_CNV,tBRCA_RNA,tBRCA_PRO),
-                type=c("binomial","gaussian","gaussian","gaussian"), col.scheme = col.scheme,
-                row.order=c(T,T,T,T),chr=chr,plot.chr=c(F,F,F,F),sparse=c(T,T,T,T),cap=c(F,F,F,F))
-    dev.off()
-    
-    fn = paste(pd, n, "-clusters_lambda005_020_100_080_ggHM.pdf", sep="_")
-    plotHeatmap_gg(fit=fit.k,datasets=list(tBRCA_clin,tBRCA_mut,tBRCA_CNV,tBRCA_RNA,tBRCA_PRO), fn = fn,
-                   dataset.names = c("CLINICAL","MUT","CNV","RNA","PRO"),
-                   type=c("clinical","binomial","gaussian","gaussian","gaussian"),
-                   row.order=c(F,T,T,T,T),sparse=c(F,T,T,T,T), row.names=c(T,T,F,F,F))
-    
-#     clusters=fit.k$clusters
-#     k=length(unique(clusters))
-#     sorder=order(clusters)
-#     row.names(tBRCA_mut)[sorder] # try to see if this ordering is correct
-#     
-#     # trouble shoot: use mut matrix as clin to see if key genes match up
-#     figure = paste(pd,'LFQ_clin_proteome_naMax10_SDi2.pdf', sep="_")
-#     plot_clin(LFQ_mp, clus_order2 , clin, figure) # change to just input a vector of samples
-#     
-    BICs[[k]] = fit.k$BIC
-    dev.ratios[[k]] = fit.k$dev.ratio
-  }
-}
-
-BIC_m = do.call(rbind,BICs)
-dev.ratio_m = do.call(rbind,dev.ratios)
-
-fn = paste(pd, 'icluster_k1-11_dev.ratio_summary.pdf',sep ="_")
+### plot percentage variance explained by different Ks
+# plot(1:(nK+1),c(0,devRatMinBIC),type="b",xlab="Number of clusters (K+1)",
+#        ylab="%Explained Variation")
+fn = paste(pd, 'icluster_Ks_dev.ratio_summary.pdf',sep ="_")
 p = ggplot()
-p = p + geom_point(aes(x = c(1:11), y = c(0,dev.ratio_m))) + scale_x_discrete(breaks=c(1:11))
+p = p + geom_point(aes(x = c(1:nK+1), y = c(0,devRatMinBIC))) + scale_x_discrete(breaks=c(1:nK+1))
 p = p + labs(x="Number of clusters", y="% explained variation") + theme_bw() + 
   theme(axis.title = element_text(size=16), axis.text.x = element_text(vjust = 0.5, colour="black", size=10), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=16))
 p 
 ggsave(file=fn, width=5, height=4, useDingbats=FALSE)
 
 date()
+
+# for (k in 1:10){
+#   
+#   fit.k = iClusterPlus(dt1=tBRCA_mut,dt2=tBRCA_CNV,dt3=tBRCA_RNA,dt4=tBRCA_PRO,
+#                        type=c("binomial","gaussian","gaussian","gaussian"),
+#                        lambda=c(0.05,0.20,1.00,0.80),K=k,maxiter=30)
+#   
+#   n = k + 1
+#   #plotiCluster = function(fit = ){}
+#   bw.col = colorpanel(2,low="white",high="black")
+#   col.scheme = alist()
+#   col.scheme[[1]] = bw.col
+#   col.scheme[[2]] = bluered(256)
+#   col.scheme[[3]] = bluered(256)
+#   col.scheme[[4]] = bluered(256)
+#   fn = paste(pd, n, "clusters_lambda005_020_100_080_HM.pdf", sep="_")
+#   pdf(fn, useDingbats=FALSE)
+#   plotHeatmap(fit=fit.k,datasets=list(tBRCA_mut,tBRCA_CNV,tBRCA_RNA,tBRCA_PRO),
+#               type=c("binomial","gaussian","gaussian","gaussian"), col.scheme = col.scheme,
+#               row.order=c(T,T,T,T),chr=chr,plot.chr=c(F,F,F,F),sparse=c(T,T,T,T),cap=c(F,F,F,F))
+#   dev.off()
+#   
+#   fn = paste(pd, n, "-clusters_lambda005_020_100_080_ggHM.pdf", sep="_")
+#   plotHeatmap_gg(fit=fit.k,datasets=list(tBRCA_clin,tBRCA_mut,tBRCA_CNV,tBRCA_RNA,tBRCA_PRO), fn = fn,
+#                  dataset.names = c("CLINICAL","MUT","CNV","RNA","PRO"),
+#                  type=c("clinical","binomial","gaussian","gaussian","gaussian"),
+#                  row.order=c(F,T,T,T,T),sparse=c(F,T,T,T,T), row.names=c(T,T,F,F,F))
+#   
+#   #     clusters=fit.k$clusters
+#   #     k=length(unique(clusters))
+#   #     sorder=order(clusters)
+#   #     row.names(tBRCA_mut)[sorder] # try to see if this ordering is correct
+#   #     
+#   #     # trouble shoot: use mut matrix as clin to see if key genes match up
+#   #     figure = paste(pd,'LFQ_clin_proteome_naMax10_SDi2.pdf', sep="_")
+#   #     plot_clin(LFQ_mp, clus_order2 , clin, figure) # change to just input a vector of samples
+#   #     
+#   BICs[[k]] = fit.k$BIC
+#   dev.ratios[[k]] = fit.k$dev.ratio
+# }
+# 
+# 
+# BIC_m = do.call(rbind,BICs)
+# dev.ratio_m = do.call(rbind,dev.ratios)
+# 
+# fn = paste(pd, 'icluster_k1-11_dev.ratio_summary.pdf',sep ="_")
+# p = ggplot()
+# p = p + geom_point(aes(x = c(1:11), y = c(0,dev.ratio_m))) + scale_x_discrete(breaks=c(1:11))
+# p = p + labs(x="Number of clusters", y="% explained variation") + theme_bw() + 
+#   theme(axis.title = element_text(size=16), axis.text.x = element_text(vjust = 0.5, colour="black", size=10), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=16))
+# p 
+# ggsave(file=fn, width=5, height=4, useDingbats=FALSE)
+# 
+# date()
 # feature selection
 # features = alist()
 # features[[1]] = colnames(tBRCA_mut)

@@ -41,7 +41,8 @@ unfactorize = function(df){
 }
 
 ##### MAIN CODE #####
-load("clusterRdata/XX.Rdata")
+# load data stored from preprocessData script
+load("clusterRdata/2015-11-13_BRCA.Rdata")
 if (FALSE){ # don't load directly anymore
   # BRCA data: load
   BRCA_mut = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_SOMATIC_formatted.txt",sep=""))
@@ -106,6 +107,7 @@ if (FALSE){ # don't load directly anymore
   
   sample_aligned = all(rownames(tBRCA_mut)==rownames(tBRCA_CNV)) && all(rownames(tBRCA_mut)==rownames(tBRCA_RNA)) && all(rownames(tBRCA_mut)==rownames(tBRCA_PRO))
 }
+
 ##### model tuning #####
 if (sample_aligned){
   #tune_icluster = function(){}
@@ -121,133 +123,3 @@ if (sample_aligned){
 } else {
   warning("Samples across data files are not aligned!!")
 }
-
-# # model selection
-# output=alist()
-# files=grep("cv.fit",dir())
-# for(i in 1:length(files)){
-#   load(dir()[files[i]])
-#   output[[i]]=cv.fit
-#   }
-# nLambda = nrow(output[[1]]$lambda)
-# nK = length(output)
-# BIC = getBIC(output)
-# devR = getDevR(output)
-# 
-# minBICid = apply(BIC,2,which.min)
-# devRatMinBIC = rep(NA,nK)
-# for(i in 1:nK){
-#   devRatMinBIC[i] = devR[minBICid[i],i]
-#   }
-# 
-# plot(1:(nK+1),c(0,devRatMinBIC),type="b",xlab="Number of clusters (K+1)",
-#        ylab="%Explained Variation")
-# 
-# chr=unlist(strsplit(colnames(gbm.cn),"\\."))
-# chr=chr[seq(1,length(chr),by=2)]
-# chr=gsub("chr","",chr)
-# chr=as.numeric(chr)
-
-# #truncate the values for a better image plot
-#   cn.image=gbm.cn
-# cn.image[cn.image>1.5]=1.5
-# cn.image[cn.image< -1.5]= -1.5
-# exp.image=gbm.exp
-# exp.image[exp.image>2.5]=2.5
-# exp.image[exp.image< -2.5]= -2.5
-
-
-
-# ##### example data #####
-# data(gbm)
-# 
-# # select mutation features
-# dim(gbm.mut)
-# mut.rate=apply(gbm.mut,2,mean)
-# gbm.mut2 = gbm.mut[,which(mut.rate>0.02)]
-# 
-# gbm.cn=gbm.cn[order(rownames(gbm.cn)),]
-# # check if all the samples are in the same order for the three data sets
-# all(rownames(gbm.mut2)==rownames(gbm.exp))
-# 
-# fit.single=iClusterPlus(dt1=gbm.mut2,dt2=gbm.exp,
-#                           type=c("binomial","gaussian"),
-#                           lambda=c(0.04,0.90),K=2,maxiter=10)
-# 
-# # quick plot to check
-# bw.col = colorpanel(2,low="white",high="black")
-# col.scheme = alist()
-# col.scheme[[1]] = bw.col
-# col.scheme[[2]] = bluered(256)
-# plotHeatmap(fit=fit.single,datasets=list(gbm.mut2,gbm.exp),
-#             type=c("binomial","gaussian"), col.scheme = col.scheme,
-#             row.order=c(F,T),chr=chr,plot.chr=c(F,F),sparse=c(T,T),cap=c(F,F))
-# 
-# # model tuning
-# set.seed(123)
-# date()
-# for(k in 1:5){
-#   cv.fit = tune.iClusterPlus(cpus=12,dt1=gbm.mut2,dt2=gbm.cn,dt3=gbm.exp,
-#                                type=c("binomial","gaussian","gaussian"),K=k,n.lambda=185,
-#                                scale.lambda=c(1,1,1),maxiter=20)
-#   save(cv.fit, file=paste("cv.fit.k",k,".Rdata",sep=""))
-#   }
-# date()
-# 
-# # model selection
-# output=alist()
-# files=grep("cv.fit",dir())
-# for(i in 1:length(files)){
-#   load(dir()[files[i]])
-#   output[[i]]=cv.fit
-#   }
-# nLambda = nrow(output[[1]]$lambda)
-# nK = length(output)
-# BIC = getBIC(output)
-# devR = getDevR(output)
-# 
-# minBICid = apply(BIC,2,which.min)
-# devRatMinBIC = rep(NA,nK)
-# for(i in 1:nK){
-#   devRatMinBIC[i] = devR[minBICid[i],i]
-#   }
-# 
-# plot(1:(nK+1),c(0,devRatMinBIC),type="b",xlab="Number of clusters (K+1)",
-#        ylab="%Explained Variation")
-# 
-# chr=unlist(strsplit(colnames(gbm.cn),"\\."))
-# chr=chr[seq(1,length(chr),by=2)]
-# chr=gsub("chr","",chr)
-# chr=as.numeric(chr)
-# #truncate the values for a better image plot
-#   cn.image=gbm.cn
-# cn.image[cn.image>1.5]=1.5
-# cn.image[cn.image< -1.5]= -1.5
-# exp.image=gbm.exp
-# exp.image[exp.image>2.5]=2.5
-# exp.image[exp.image< -2.5]= -2.5
-# 
-# # feature selection
-# features = alist()
-# features[[1]] = colnames(gbm.mut2)
-# features[[2]] = colnames(gbm.cn)
-# features[[3]] = colnames(gbm.exp)
-# sigfeatures=alist()
-# for(i in 1:3){
-#   rowsum=apply(abs(best.fit$beta[[i]]),1, sum)
-#   upper=quantile(rowsum,prob=0.75)
-#   sigfeatures[[i]]=(features[[i]])[which(rowsum>upper)]
-#   }
-# names(sigfeatures)=c("mutation","copy number","expression")
-# #print a few examples of selected features
-#   head(sigfeatures[[1]])
-# 
-# # plot
-# bw.col = colorpanel(2,low="white",high="black")
-# col.scheme = alist()
-# col.scheme[[1]] = bw.col
-# col.scheme[[2]] = bluered(256)
-# col.scheme[[3]] = bluered(256)
-# plotHeatmap(fit=best.fit,datasets=list(gbm.mut2,cn.image,exp.image),
-#               type=c("binomial","gaussian","gaussian"), col.scheme = col.scheme,
-#               row.order=c(F,F,T),chr=chr,plot.chr=c(F,T,F),sparse=c(T,F,T),cap=c(F,T,F))
