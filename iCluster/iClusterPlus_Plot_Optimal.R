@@ -134,10 +134,10 @@ plotHeatmap_gg = function(fit, datasets, dataset.names, type=c("gaussian","binom
   
   m=length(datasets)  
   if(is.null(row.order)){row.order=rep(T,m)}  
-  if(is.null(scale)){scale=rep("none",m)}
-  if(is.null(sparse)){sparse=rep(F,m)}
-  if(is.null(cap)){cap=rep(F,m)}
-  if(is.null(plot.chr)){plot.chr=rep(F,m)}
+#   if(is.null(scale)){scale=rep("none",m)}
+#   if(is.null(sparse)){sparse=rep(F,m)}
+#   if(is.null(cap)){cap=rep(F,m)}
+#   if(is.null(plot.chr)){plot.chr=rep(F,m)}
   
   #get clusters 
   clusters=fit$clusters
