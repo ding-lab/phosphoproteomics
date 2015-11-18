@@ -257,7 +257,9 @@ output=alist()
 files=grep("cv.fit",dir("clusterRdata"))
 for(i in 1:length(files)){
   load(paste("clusterRdata/", dir("clusterRdata")[files[i]], sep=""))
-  output[[i]]=cv.fit
+  k.Rdata = gsub(".*_","",dir("clusterRdata")[files[i]])
+  k = as.numeric(gsub("\\.Rdata","",k.Rdata))
+  output[[k]]=cv.fit
   
 }
 nLambda = nrow(output[[1]]$lambda)
@@ -276,7 +278,7 @@ for(i in 1:nK){
 #        ylab="%Explained Variation")
 fn = paste(pd, 'icluster_Ks_dev.ratio_summary.pdf',sep ="_")
 p = ggplot()
-p = p + geom_point(aes(x = c(1:(nK+1)), y = c(0,devRatMinBIC))) + scale_x_discrete(breaks=c(1:nK+1))
+p = p + geom_point(aes(x = c(1:(nK+1)), y = c(0,devRatMinBIC))) + scale_x_discrete(breaks=c(1:(nK+1)))
 p = p + labs(x="Number of clusters", y="% explained variation") + theme_bw() + 
   theme(axis.title = element_text(size=16), axis.text.x = element_text(vjust = 0.5, colour="black", size=10), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=16))
 p 
