@@ -192,8 +192,12 @@ plotHeatmap_gg = function(fit, datasets, dataset.names, type=c("gaussian","binom
     #     if(scale[i]=='col'){image.data=scale.fn(t(image.data)); image.data=t(image.data)}
     
     image.data2=as.matrix(rev(as.data.frame(image.data)))   #reverse the rows so the image will be top-down ordering
+    sample_level = row.names(image.data)
+    gene_level = colnames(image.data2)
     image.data_m = melt(image.data2)
     colnames(image.data_m) = c("sample","gene","value")
+    image.data_m$sample = factor(image.data_m$sample, levels = sample_level)
+    image.data_m$gene = factor(image.data_m$gene, levels = gene_level)
     #     image.data_m$name = dataset.names[i]
     #     melted_image.data[[i]] = image.data_m
     
