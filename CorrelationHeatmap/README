@@ -1,0 +1,12 @@
+Aim here is to create a graphical representation of clinical correlations in the form of
+a clustered heatmap.  Plotting code is based on work here:
+    /Users/mwyczalk/Documents/WorkingGroups/TCGA_CESC_AWG/analysis/Clinical/CorrelationHeatmap
+
+Data are from the UnifiedVirus2 Jan2015, 
+    /Users/mwyczalk/Data/Virus/Virus_2013.9a/Music/UnifiedVirus2/Jan2015
+
+TODO: adjust h, v just of labels so they line up with heatmap squares
+Use log10, not loge
+Allow limits of P-values
+
+
