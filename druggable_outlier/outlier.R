@@ -42,7 +42,7 @@ find_outlier = function(m, name="dataset", barplot = TRUE, plot=TRUE, printOrder
   num_outliers = sum(outlier_box, na.rm=T)
   cat(paste("Number_of_samples:", dim(outlier)[2], "Number_of_outliers:", num_outliers,"; Avg_outlier_per_sample:", num_outliers/dim(outlier)[2], "\n\n", sep = " "))
   
-  results = data.frame(rowSums(outlier_mzscore >= 1.5))
+  results = data.frame(rowSums(outlier_mzscore >= 1))
   colnames(results)[1]= "count"
   results = results[order(results[,1], decreasing=T),,drop=F]
   results$cohort = name
