@@ -32,8 +32,8 @@ find_outlier = function(m, name="dataset", barplot = TRUE, plot=TRUE, printOrder
     # box-plot definition of outlier
     IQR = quantile(m2[i,], probs=0.75, na.rm=T) - quantile(m2[i,], probs=0.25, na.rm=T) 
     outlier_box[i,] = (m2[i,] >= quantile(m2[i,], probs=0.75, na.rm=T) + 1.5*IQR)
-    outlier_mzscore[i,] = (m2[i,] - quantile(m2[i,], probs=0.75, na.rm=T))/(1.5*IQR) #inner fences
     # outlier_box2[i,] = (m2[i,] >= quantile(m2[i,], probs=0.75, na.rm=T) + 3.5*IQR) #outer fences
+    outlier_mzscore[i,] = (m2[i,] - quantile(m2[i,], probs=0.75, na.rm=T))/IQR
   }
   # output the outlier score table
   fn = paste(pd,name,'outlier_score_table.txt', sep="_")
