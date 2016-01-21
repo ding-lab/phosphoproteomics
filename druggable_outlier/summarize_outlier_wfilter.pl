@@ -18,7 +18,7 @@ die $usage , unless @ARGV == 0;
 # dependencies
 my $base_path = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_outlier/figures/";
 my $mut_base = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_mutation/";
-my $fDate = "2015-11-03/2015-11-03";
+my $fDate = "2016-01-21/2016-01-21";
 #my $drug_f = "/Users/khuang/Box\ Sync/PhD/proteogenomics/reference_files/gene_drug_list/UnionOfVariantDrug_babyHugo_genedrug_TARGET_db_v3_merged_hugoified_curated_noKns_noTSG.list.txt";
 
 my @cancers = ("BRCA", "CRC", "OV PNNL", "OV JHU");

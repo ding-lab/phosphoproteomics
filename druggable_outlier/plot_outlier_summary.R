@@ -6,11 +6,11 @@
 setwd("/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_outlier")
 source("/Users/khuang/bin/LIB_exp.R")
 
-summary = read.table(header=T, sep="\t","/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_outlier/results/2015-11-03_outlier_summary_filtered.txt")
+summary = read.table(header=T, sep="\t","/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_outlier/results/2016-01-21_outlier_summary_filtered.txt")
 
 
-YlOrRd = brewer.pal(9, "YlOrRd") 
-getPalette = colorRampPalette(YlOrRd)
+#YlOrRd = brewer.pal("#FFFFFF","#fed976","#bd0026") 
+getPalette = colorRampPalette(c("#FFFFFF","#fed976","#e31a1c"))
 outlier.colors=c("NA", "#000000")
 
 summary$Level = factor(summary$Level, levels = c("MUT","CNV", "RNA", "RPPA", "PRO", "PHO"))
@@ -20,7 +20,7 @@ summary$rounded_outlier_percentage = round(as.numeric(summary$Outlier_precentage
 summary$Gene = factor(summary$Gene, levels = summary$Gene[order(summary$rounded_outlier_percentage)])
 
 summary$truncated_outlier_percentage = summary$rounded_outlier_percentage
-summary[summary$truncated_outlier_percentage>=22,]$truncated_outlier_percentage = 22
+summary[summary$truncated_outlier_percentage>=30,]$truncated_outlier_percentage = 30
 
 fn = paste(pd, 'pan3can_druggable_outliers_summary.pdf',sep ="_")
 p = ggplot(data=summary)
