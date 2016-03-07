@@ -16,22 +16,28 @@ my $usage = 'perl summarize_outlier_wfilter.pl
 die $usage , unless @ARGV == 0;
 
 # dependencies
+my $count_thres = 500;
 my $base_path = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_outlier/figures/";
+my $base_path2 = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/";
 my $mut_base = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/druggable_mutation/";
 my $fDate = "2016-03-02/2016-03-02";
 #my $drug_f = "/Users/khuang/Box\ Sync/PhD/proteogenomics/reference_files/gene_drug_list/UnionOfVariantDrug_babyHugo_genedrug_TARGET_db_v3_merged_hugoified_curated_noKns_noTSG.list.txt";
 
 my @cancers = ("BRCA", "CRC", "OV PNNL", "OV JHU");
 
+my $gene2count = {}; # ex: sample -> gene -> count; # added March 2016, used to filter outliers at other levels
 my $gene2score = {}; # ex: datatype -> sample -> gene -> score;
 my $outliers = {}; # ex: datatype -> gene -> outlier; 
 #my $gene2drug = {}; # ex. gene -> drug;
 my $samples = {}; # ex: datatype -> sample -> has_outlier;
 my $data2n = {};
-my %gene_set; #limit the gene list to what's found in the levels to somatic
+my %gene_set; #limit the somatic gene list to what's found in other levels
 print "Cancer\tLevel\tGene\tNum_outlier\tNum_samples\tOutlier_precentage\n";
 
 foreach my $cancer (@cancers){
+
+my $RNA_c_f = $cancer."/".$cancer."_mRNA_formatted.txt";
+
 my $Mut_f = $cancer."_proteomic_maf_dmut.txt";
 my $CNV_f = "_KH_".$cancer."\ druggable\ CNV\ normalized_outlier_score_table.txt";
 my $RNA_f = "_KH_".$cancer."\ druggable\ RNA\ normalized_outlier_score_table.txt";
@@ -40,6 +46,8 @@ my $Pho_f = "_KH_".$cancer."\ druggable\ phosphoproteome\ normalized_outlier_sco
 my $RPPA_f = "_KH_".$cancer."\ druggable\ RPPA_outlier_score_table.txt";
 
 if ($cancer eq "OV PNNL" || $cancer eq "OV JHU"){
+	$RNA_c_f = "OV/OV_mRNA_formatted.txt";
+
 	$Mut_f = "OV_proteomic_maf_dmut.txt";
 	$CNV_f = "_KH_OV\ druggable\ CNV\ normalized_outlier_score_table.txt";
 	$RNA_f = "_KH_OV\ druggable\ RNA\ normalized_outlier_score_table.txt";
@@ -53,6 +61,9 @@ $outliers = {}; # ex: datatype -> gene -> outlier;
 #my $gene2drug = {}; # ex. gene -> drug;
 $samples = {}; # ex: datatype -> sample -> has_outlier;
 $data2n = {}; # datatype -> sample size
+
+# read counts as future filters
+read_count($base_path2.$RNA_c_f, $cancer);
 
 # read and store outlier results
 read_RPPA_score($base_path.$fDate.$RPPA_f, "RPPA");
@@ -97,13 +108,44 @@ foreach my $dtype (sort keys %outliers){
 
 ## todo: filtered version
 
+sub read_count {
+	my $dFile = shift;
+	my $cancer = shift;
+	open ( IN , "<$dFile" ) or die "Cannot open $dFile: $!";
+	my @G = split "\t", <IN>; 
+	#change to R-formatted ID to match up with the outlier table
+	if ($cancer eq "OV PNNL" || $cancer eq "OV JHU"){ 
+		for my $sample (@G){
+			$sample = "X".$sample;     # change that word
+        	$sample =~ s/-/./g;
+        	#print "$sample\n";
+		}
+	}
+
+	while (<IN>)
+	{
+		chomp;
+		my @F = split "\t", $_;
+		my $gene = $F[0];
+		my $outlier_num = 0;
+
+
+
+		for (my $i  = 1; $i < $#F; $i++){
+			$gene2count -> {$G[$i]} -> {$gene} = $F[$i];
+		} 
+	} 
+	close (IN);
+}
+
 sub read_score {
 	my $dFile = shift;
 	my $type = shift;
 	open ( IN , "<$dFile" ) or die "Cannot open $dFile: $!";
-	my @G = split "\t", <IN>; 
+	my @G = split "\t", <IN>; # sample name row
 	my $dsize = $#G-1;
 	$data2n -> {$type} = $dsize;
+
 	while (<IN>)
 	{
 		chomp;
@@ -121,9 +163,11 @@ sub read_score {
 					my $PROs = $gene2score -> {"PRO"} -> {$G[$i]} -> {$gene};
 					if ($RNAs <=1 && $PROs <=1){next;}
 				}
-				$outlier_num++; 
-				$samples -> {$type} -> {$G[$i]} = 1;
-
+				my $rna_count = $gene2count -> {$G[$i]} -> {$gene};
+				if ( $rna_count >= $count_thres ){ # only count outliers if RNA seq has sufficient count for that gene
+					$outlier_num++; 
+					$samples -> {$type} -> {$G[$i]} = 1;
+				}
 			}
 		} 
 		$outliers -> {$type} -> {$gene} = $outlier_num;
@@ -151,7 +195,12 @@ sub read_RPPA_score {
 
 		for (my $i  = 1; $i < $#F; $i++){
 			if ($F[$i] eq "NA"){next;}
-			elsif ($F[$i] >= 1.5){ $outlier_num++; $samples -> {$type} -> {$G[$i]} = 1}
+			elsif ($F[$i] >= 1.5){ 
+				my $rna_count = $gene2count -> {$G[$i]} -> {$gene};
+				if ( $rna_count >= $count_thres ){
+					$outlier_num++; $samples -> {$type} -> {$G[$i]} = 1
+				}
+			}
 		} 
 		# pick the highest count RPPA marker
 		if (exists($outliers -> {$type} -> {$gene})){
