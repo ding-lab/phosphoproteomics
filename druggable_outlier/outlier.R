@@ -177,8 +177,9 @@ find_outlier = function(m, name="dataset", barplot = TRUE, plot=TRUE, printOrder
 }
 
 ##### OUTLIER IN ITRAQ PROTEOME: demonstrate usage #####
-if (FALSE){
+if (FALSE){ 
+  # expect a gene-sample (row-column) dataset
   ITRAQ = read.table(row.names=1,header=TRUE, sep="\t", file='/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_24WHIM/WHIM_proteome/proteome-ratio-norm/proteome-ratio-norm_exp_v2_collapsed.txt')
-  ITRAQ.d = ITRAQ[row.names(ITRAQ) %in% druggable,]
-  ITRAQ_druggable = find_outlier(ITRAQ.d, name = "ITRAQ druggable proteome")
+  ITRAQ.d = ITRAQ[row.names(ITRAQ) %in% druggable,] # extract only the druggable genes
+  ITRAQ_druggable = find_outlier(ITRAQ.d, name = "ITRAQ druggable proteome") # find outlier
 }
