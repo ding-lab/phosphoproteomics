@@ -37,7 +37,7 @@ BRCA_Pro_c = BRCA_Pro[row.names(BRCA_Pro) %in% druggable,]
 BRCA_Pro_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_Pro_c,name="BRCA Proteome")
 
 ### Phosphoproteome ###
-BRCA_Pho = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_PHO_formatted_normalized.txt",sep=""))
+BRCA_Pho = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_PHO_by_PRO_formatted_normalized.txt",sep=""))
 BRCA_Pho_c = BRCA_Pho[row.names(BRCA_Pho) %in% druggable,]
 BRCA_Pho_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_Pho_c,name="BRCA Phosphoproteome")
 
@@ -60,7 +60,7 @@ OV_PNNL_Pro_c = OV_PNNL_Pro[row.names(OV_PNNL_Pro) %in% druggable,]
 OV_PNNL_Pro_diff_exp = find_diff_exp(OV_mut_g,OV_PNNL_Pro_c,name="OV PNNL Proteome")
 
 ### Phosphoproteome ###
-OV_PNNL_Pho = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/OV/OV_PNNL_PHO_formatted_normalized.txt",sep=""))
+OV_PNNL_Pho = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/OV/OV_PNNL_PHO_by_PRO_formatted_normalized.txt",sep=""))
 OV_PNNL_Pho_c = OV_PNNL_Pho[row.names(OV_PNNL_Pho) %in% druggable,]
 OV_PNNL_Pho_diff_exp = find_diff_exp(OV_mut_g,OV_PNNL_Pho_c,name="OV PNNL Phosphoproteome")
 

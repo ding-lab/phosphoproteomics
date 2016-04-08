@@ -31,15 +31,10 @@ BRCA_mut = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3
 brcaGenes = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "KMT2C")
 BRCA_mut_g = BRCA_mut[row.names(BRCA_mut) %in% brcaGenes,]
 
-### Proteome ###
-BRCA_Pro = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_PRO_formatted_normalized.txt",sep=""))
-BRCA_Pro_c = BRCA_Pro[row.names(BRCA_Pro) %in% druggable,]
-BRCA_Pro_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_Pro_c,name="BRCA Proteome")
-
-### Phosphoproteome ###
-BRCA_Pho = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_PHO_formatted_normalized.txt",sep=""))
-BRCA_Pho_c = BRCA_Pho[row.names(BRCA_Pho) %in% druggable,]
-BRCA_Pho_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_Pho_c,name="BRCA Phosphoproteome")
+### BRCA pho KEGG ###
+path_file = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/pathway_activation/figures/2015-10-11/2015-10-11_KH_BRCA_Pho.n_all_KEGGSig_pathway_activation_setMean.txt"
+BRCA_KEGG_Pho = read.table(row.names=2, header=TRUE, sep="\t", file=path_file) # need to add 2 tabs in the header by vi
+BRCA_KEGG_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_KEGG_Pho,name="BRCA KEGG Phosphosignaling")
 
 ### all levels ###
 # do this later, may be more benefitial to do the all outlier table and summarize that instead
@@ -51,6 +46,11 @@ ovGenes = c("TP53", "NF1", "KRAS", "BRCA1", "BRCA2", "CDK12")
 OV_mut_g = OV_mut[row.names(OV_mut) %in% ovGenes,]
 
 ### Proteome ###
+path_file = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/pathway_activation/figures/2015-10-11/2015-10-11_KH_OV_PNNL_Pho.n_all_KEGGSig_pathway_activation_setMean.txt"
+OV_KEGG_Pho = read.table(row.names=2, header=TRUE, sep="\t", file=path_file) # need to add 2 tabs in the header by vi
+OV_KEGG_diff_exp = find_diff_exp(OV_mut_g,OV_KEGG_Pho,name="OV PNNL KEGG Phosphosignaling")
+
+
 OV_JHU_Pro = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/OV/OV_JHU_PRO_formatted_normalized.txt",sep=""))
 OV_JHU_Pro_c = OV_JHU_Pro[row.names(OV_JHU_Pro) %in% druggable,]
 OV_JHU_Pro_diff_exp = find_diff_exp(OV_mut_g,OV_JHU_Pro_c,name="OV JHU Proteome")
