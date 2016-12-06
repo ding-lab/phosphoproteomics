@@ -1,62 +1,8 @@
+### validate_kinase_sub_all_normalize.R ### 
 # Yige Wu @ WashU 2016 Nov
 # look at correlations of kinase and downstream substrates phosphorylation status
-
-table_2can <- c()
-k_s_2can <- c()
-## choose one between the following two cancers to process
-cancer = "BRCA"
-# cancer = "OV"
-
-# input -------------------------------------------------------------------
-if (cancer == "BRCA") {
-  # BRCA
-  cancer = "BRCA"
-  BRCA_pro_f = "~/Box Sync/BRCA/BRCA_PRO_formatted_normalized.txt"
-  pro_data <- read.delim(BRCA_pro_f)
-  BRCA_pho_f = "~/Box Sync/BRCA/TCGA_Breast_BI_Phosphoproteome.phosphosite.itraq_abbrev_normlized.tsv"
-  pho_data = read.delim(BRCA_pho_f)
-  ## read in grouped phosphorylation data!
-  BRCA_pho_g = "~/Box Sync/BRCA/BRCA_PHO_by_PRO_formatted_normalized.txt"
-  pho_gdata = read.delim(BRCA_pho_g)
-  colx <- 78 # the column of protein name
-} else {
-  #OV
-  cancer = "OV"
-  OV_pho_f = "~/Box Sync/OV/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq_abbrev_normlized.tsv"
-  pho_data = read.delim(OV_pho_f)
-  OV_pho_g = "~/Box Sync/OV/OV_PNNL_PHO_by_PRO_formatted_normalized.txt"
-  pho_gdata = read.delim(OV_pho_g)
-  OV_pro_f = "~/Box Sync/OV/OV_merged_PRO_noOverlap_formatted_normalized.txt"
-  pro_data_merged <- read.delim(OV_pro_f)
-  pro_data <- pro_data_merged[,colnames(pho_data)]
-  colx <- 1 # the column of protein name
-}
-
-# ordering the columns by sample name
-pro_data <- pro_data[,order(names(pro_data))]
-pho_data <- pho_data[,order(names(pho_data))]
-pho_gdata <- pho_gdata[,order(names(pho_gdata))]#order the grouped phospho data
-
-### read in the kinase/substrate table/ phosphorylation data ### 
-K_S_f ="~/Box Sync/Phospho_databases/PhosphositePlus/data/Kinase_Substrate_Dataset_human_final_hugoified.txt"
-k_s_table = read.delim(K_S_f)
-
-#split the SUBSTRATE and SUB_MOD_RSD in the first column
-library(stringr)
-pho_rsd_split <- data.frame(str_split_fixed(pho_data$X, ":", 3))
-
-#covert the SUB_MOD_RSD from lowercase to uppercase
-pho_rsd_split[,3] <- toupper(pho_rsd_split[,3])
-colnames(pho_rsd_split) <- c("SUBSTRATE","transcript","SUB_MOD_RSD")
-
-#function for normalize the variables for regression
-range01 <- function(x, ...){(x - min(x, ...)) / (max(x, ...) - min(x, ...))}
-
-### loop through each of the substrate
-unique_substrate = unique(k_s_table$SUB_GENE) 
-unique_k_s_rsd <- unique(k_s_table[,c("GENE","SUB_GENE","SUB_MOD_RSD")])
-
-
+#setwd("~/proteomics/pan3can_analysis/phospho_network")
+setwd("~/Desktop/Ding Lab/figures")
 
 ## choose one between the following two cancers
 # # BRCA
@@ -102,7 +48,6 @@ colnames(pho_rsd_split) <- c("SUBSTRATE","unknown","SUB_MOD_RSD")
 
 #function for normalize the y for glm regression
 range01 <- function(x, ...){(x - min(x, ...)) / (max(x, ...) - min(x, ...))}
-# initiate ----------------------------------------------------------------
 
 ##initiating the output
 #considering currently we have 3 models:
@@ -120,7 +65,6 @@ list1 <- list()
 list2 <- list()
 list3 <- list()
 count <- 0
-# looping substrate -----------------------------------------------------------------
 
 for (kinase in unique_kinase){
 #for (kinase in "ERBB2"){#test
@@ -208,7 +152,4 @@ for (kinase in unique_kinase){
   }
 }
 
-# integrate_output --------------------------------------------------------
-# print result statistics -------------------------------------------------
-# construct table for bubble chart then do analysis over gain for the other cancer dataset -----------------------------------------------------
-# bubble chart module -----------------------------------------------------
+
