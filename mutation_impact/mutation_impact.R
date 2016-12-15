@@ -4,6 +4,28 @@
 # called by other scripts
 # mutation_impact.R 
 
+# file dependencies: gene lists
+kinaseList = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_files/2014-12-05_CPTAC_Kinase.MATRIX.v3b5_sheet1_genes.list', header=FALSE, stringsAsFactors = F)
+drugList = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_files/gene_drug_list/Premed_raw_databases/drugBank/all_target_ids_all.txt.human.tsv_hugoified.tsv_list.txt_list', header=FALSE, stringsAsFactors = F)
+#cancer_genes = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_files/Kandoth_127SMG_list_brca_refseq_ncbi.txt.list', header=FALSE, stringsAsFactors = F)
+cancer_genes = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/reference_files/cgenes_and_druggable.list', header=FALSE, stringsAsFactors = F)
+k_s_table = read.table(header=T, stringsAsFactors = F, quote = "", fill=T, sep = "\t","/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/Phospho_databases/PhosphositePlus/data/Kinase_Substrate_Dataset_human_final_hugoified.txt")
+length(unique(k_s_table$GENE))
+length(unique(k_s_table$SUB_GENE))
+#unique(c(k_s_table_neighbor$GENE,k_s_table_neighbor$SUB_GENE)) %in% 
+
+kinome = as.vector(t(kinaseList))
+druggable = as.vector(t(drugList))
+#druggable = as.vector(t(cancer_genes))
+druggable_k = druggable[druggable %in% c(k_s_table$GENE,k_s_table$SUB_GENE)]
+SMGs = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "KMT2C","TP53", "NF1", "KRAS", "BRCA1", "BRCA2", "CDK12",
+         "TP53","KRAS","APC","PIK3CA","SMAD4")
+SMGs = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "TP53", "NF1", "KRAS", "BRCA1", "BRCA2")
+druggable_k = c(druggable_k,SMGs)
+
+brcaGenes = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1","BRCA1","BRCA2")
+ovGenes = c("TP53", "NF1", "KRAS", "BRCA1", "BRCA2")
+
 #setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/mutation_impact/")
 #source("/Users/khuang/bin/LIB_exp.R")
 

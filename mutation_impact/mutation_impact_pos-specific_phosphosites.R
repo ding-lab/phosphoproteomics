@@ -29,16 +29,16 @@ SMGs = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "KMT2C","TP53", "NF1", "KR
 ##### BRCA #####
 ### Mutation matrix ###
 BRCA_mut = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_SOMATIC_formatted_amino_acid.txt",sep=""))
-#brcaGenes = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "KMT2C")
-#BRCA_mut_g = BRCA_mut[row.names(BRCA_mut) %in% brcaGenes,]
+brcaGenes = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "KMT2C")
+BRCA_mut_g = BRCA_mut[row.names(BRCA_mut) %in% brcaGenes,]
 
 ### Phosphosites ###
-BRCA_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201602_pancan_phospho/TCGA_Breast_BI_Phosphoproteome/TCGA_Breast_BI_Phosphoproteome.phosphosite.itraq_abbrev_normlized.tsv")
-BRCA_Pho_genes = gsub("\\..*","",row.names(BRCA_Pho))
+BRCA_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201602_pancan_phospho/TCGA_Breast_BI_Phosphoproteome/TCGA_Breast_BI_Phosphoproteome.phosphosite.itraq_abbrev_normlized_max10NA.tsv")
+BRCA_Pho_genes = gsub("\\:.*","",row.names(BRCA_Pho))
 BRCA_Pho_c = BRCA_Pho[BRCA_Pho_genes %in% druggable,]
 
-BRCA_Pho_c_10NA = BRCA_Pho_c[rowSums(!is.na(BRCA_Pho_c))>=10,]
-#BRCA_Pho_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_Pho_c_10NA,name="BRCA Phosphosites")
+#BRCA_Pho_c_10NA = BRCA_Pho_c[rowSums(!is.na(BRCA_Pho_c))>=10,]
+BRCA_Pho_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_Pho_c,name="BRCA Phosphosites")
 
 ### all levels ###
 # do this later, may be more benefitial to do the all outlier table and summarize that instead
@@ -46,15 +46,18 @@ BRCA_Pho_c_10NA = BRCA_Pho_c[rowSums(!is.na(BRCA_Pho_c))>=10,]
 ##### OV #####
 ### Mutation matrix ###
 OV_mut = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/OV/OV_SOMATIC_formatted_amino_acid.txt",sep=""))
-#ovGenes = c("TP53", "NF1", "KRAS", "BRCA1", "BRCA2", "CDK12")
-#OV_mut_g = OV_mut[row.names(OV_mut) %in% ovGenes,]
+ovGenes = c("TP53", "NF1", "KRAS", "BRCA1", "BRCA2", "CDK12")
+OV_mut_g = OV_mut[row.names(OV_mut) %in% ovGenes,]
 
 ### Proteome ###
-OV_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201602_pancan_phospho/TCGA_Breast_BI_Phosphoproteome/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq_abbrev_normlized.tsv")
-OV_Pho_genes = gsub("\\..*","",row.names(OV_Pho))
+OV_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/OV/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq_abbrev_normalized_max10NA.tsv")
+OV_Pho_genes = gsub("\\:.*","",row.names(OV_Pho))
 OV_Pho_c = OV_Pho[OV_Pho_genes %in% druggable,]
-OV_Pho_c_10NA = OV_Pho_c[rowSums(!is.na(OV_Pho_c))>=10,]
-#OV_Pho_diff_exp = find_diff_exp(OV_mut_g,OV_Pho_c_10NA,name="OV Phosphosites")
+#OV_Pho_c_10NA = OV_Pho_c[rowSums(!is.na(OV_Pho_c))>=10,]
+# may want to limit analysis to the most widely observed phosphosite for each protein
+OV_Pho_diff_exp = find_diff_exp(OV_mut_g,OV_Pho_c,name="OV Phosphosites")
+
+# draw violin plot for each significant correlation
 
 ##### plot collective violin plot #####
 ### make violin plots for selected mutated gene-marker combo###
