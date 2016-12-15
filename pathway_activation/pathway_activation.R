@@ -47,10 +47,11 @@ KEGGpathway_activation = function (m){
       if (is.na(numPathwayGene) || numPathwayGene < 3){next}
       #geneSetP = geneSetTest(inSet, sample)[1]
       setExp = sample[rownames(sample) %in% pathway_genes,]
-      ksP = ks.test(x=setExp, y=sample)$p
-      WilcoxP = wilcox.test(setExp,sample)$p.value
-      T_p = t.test(x=setExp, y=sample)$p.value
-      allM = mean(sample)
+      test_sample = unlist(sample)
+      ksP = ks.test(x=setExp, y=test_sample)$p
+      WilcoxP = wilcox.test(setExp,test_sample)$p.value
+      T_p = t.test(x=setExp, y=test_sample)$p.value
+      allM = mean(test_sample)
       setM = mean(setExp)
       #foldChange = log2(setM/allM)
       Up = setM > allM
@@ -63,18 +64,23 @@ KEGGpathway_activation = function (m){
     stats=as.data.frame(cbind(stats, Wilcox_fdr))
     
     # all samples
-    sample_fdr = stats[,"Wilcox_fdr",drop=F] 
-    colnames(sample_fdr) = s
-    all_fdr = cbind(all_fdr, sample_fdr)
-    sample_set = stats[,"Pathway_mean",drop=F]
-    colnames(sample_set) = s
-    all_setM = cbind(all_setM, sample_set) 
+    if (nrow(stats) != 0){
+      sample_fdr = stats[,"Wilcox_fdr",drop=F] 
+      colnames(sample_fdr) = s
+      all_fdr = cbind(all_fdr, sample_fdr)
+      sample_set = stats[,"Pathway_mean",drop=F]
+      colnames(sample_set) = s
+      all_setM = cbind(all_setM, sample_set) 
+      
+      # sample level results    
+      stats=stats[order(as.numeric(stats$Wilcox_fdr), stats$Wilcox_P, decreasing=FALSE),]
+      tn = paste(pd,m.n,s,"KEGGSig_pathway_activation.txt", sep="_")
+      write.table(stats, file=tn, quote=F, sep = '\t', row.names=F)
+      cat("Results for", s, "printed to", tn, "\n")
+    } else{
+      cat("Results for", s, "is not available", "\n")
+    }
     
-    # sample level results    
-    stats=stats[order(as.numeric(stats$Wilcox_fdr), stats$Wilcox_P, decreasing=FALSE),]
-    tn = paste(pd,m.n,s,"KEGGSig_pathway_activation.txt", sep="_")
-    write.table(stats, file=tn, quote=F, sep = '\t', row.names=F)
-    cat("Results for", s, "printed to", tn, "\n")
     
   }
   # result for all samples
