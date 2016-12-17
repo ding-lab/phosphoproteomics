@@ -3,8 +3,8 @@
 
 ## choose one between the following two cancers to process
 #cancer = "BRCA"
- cancer = "OV"
-
+cancer = "OV"
+sig <- 0.05
 
 # input -------------------------------------------------------------------
 if (cancer == "BRCA") {
@@ -37,9 +37,8 @@ pho_data <- pho_data[,order(names(pho_data))]
 pho_gdata <- pho_gdata[,order(names(pho_gdata))]#order the grouped phospho data
 
 ### read in the kinase/substrate table/ phosphorylation data ### 
-pt_S_f ="~/Box Sync/Phospho_databases/DEPOD/DEPOD_201408_human_phosphatase-substrate.txt"
-k_s_table = read.delim(pt_S_f)
-colnames(k_s_table) <- c("KINASE","SUB_GENE","Substrate.type","Substrate.source.organism","Dephosphorylation.site", "Bioassay.type", "PubMed.ID")
+k_s_table <- read.csv("~/Box Sync/Phospho_databases/DEPOD/DEPOD_201612_human_phosphatase-protein_substrate_to_Kuan-lin.csv")
+colnames(k_s_table) <- c("Phosphatase_UniProtAC_human","KINASE","Substrate_UniProtAC_ref","SUB_GENE","Substrate_Type","DephosphoSite","BioassayType", "PubMed_ID_rev")
 
 #split the SUBSTRATE and SUB_MOD_RSD in the first column
 library(stringr)
@@ -60,6 +59,7 @@ list1 <- list()
 list2 <- list()
 list3 <- list()
 count <- 0
+
 # looping substrate -----------------------------------------------------------------
 for (kinase in unique_kinase){
 #for (kinase in "ERBB2"){#test
