@@ -1,6 +1,7 @@
-##### find_plot_pQTL.R #####
-# Kuan-lin Huang @ WashU 2015 Oct
-# run pQTL analysis for 3 cancer types and plot the result
+##### find_plot_mutation_impact_pho_profile.R #####
+# Kuan-lin Huang @ WashU 2016 April
+# look into mutation impact and how well phospho-profiles correlate with each other
+# correlation of the profiles of different mutations in the same gene/pathway
 
 ####### positional effect: mutated aa vs. phospho aa ###
 ##### dependencies #####
@@ -33,12 +34,12 @@ brcaGenes = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "KMT2C")
 BRCA_mut_g = BRCA_mut[row.names(BRCA_mut) %in% brcaGenes,]
 
 ### Phosphosites ###
-BRCA_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201602_pancan_phospho/TCGA_Breast_BI_Phosphoproteome/TCGA_Breast_BI_Phosphoproteome.phosphosite.itraq_abbrev_normlized_max10NA.tsv")
-BRCA_Pho_genes = gsub("\\:.*","",row.names(BRCA_Pho))
+BRCA_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201602_pancan_phospho/TCGA_Breast_BI_Phosphoproteome/TCGA_Breast_BI_Phosphoproteome.phosphosite.itraq_abbrev_normlized.tsv")
+BRCA_Pho_genes = gsub("\\..*","",row.names(BRCA_Pho))
 BRCA_Pho_c = BRCA_Pho[BRCA_Pho_genes %in% druggable,]
 
-#BRCA_Pho_c_10NA = BRCA_Pho_c[rowSums(!is.na(BRCA_Pho_c))>=10,]
-BRCA_Pho_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_Pho_c,name="BRCA Phosphosites")
+BRCA_Pho_c_10NA = BRCA_Pho_c[rowSums(!is.na(BRCA_Pho_c))>=10,]
+BRCA_Pho_diff_exp = find_diff_exp(BRCA_mut_g,BRCA_Pho_c_10NA,name="BRCA Phosphosites")
 
 ### all levels ###
 # do this later, may be more benefitial to do the all outlier table and summarize that instead
@@ -50,11 +51,11 @@ ovGenes = c("TP53", "NF1", "KRAS", "BRCA1", "BRCA2", "CDK12")
 OV_mut_g = OV_mut[row.names(OV_mut) %in% ovGenes,]
 
 ### Proteome ###
-OV_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/OV/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq_abbrev_normalized_max10NA.tsv")
-OV_Pho_genes = gsub("\\:.*","",row.names(OV_Pho))
+OV_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201602_pancan_phospho/TCGA_Breast_BI_Phosphoproteome/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq_abbrev_normlized.tsv")
+OV_Pho_genes = gsub("\\..*","",row.names(OV_Pho))
 OV_Pho_c = OV_Pho[OV_Pho_genes %in% druggable,]
-# OV_Pho_c_10NA = OV_Pho_c[rowSums(!is.na(OV_Pho_c))>=10,]
-OV_Pho_diff_exp = find_diff_exp(OV_mut_g,OV_Pho_c,name="OV Phosphosites")
+OV_Pho_c_10NA = OV_Pho_c[rowSums(!is.na(OV_Pho_c))>=10,]
+OV_Pho_diff_exp = find_diff_exp(OV_mut_g,OV_Pho_c_10NA,name="OV Phosphosites")
 
 ### merging the two proteome? ###
 ### all levels ###

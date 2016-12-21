@@ -115,9 +115,9 @@ format_clin = function(clin){
 
 ##### Pre-processing #####
 
-RPPA = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/collaborations/TCPA_2015-10-30/TCGA-PANCAN16-RBN-Trans-Gene_sampleProbe_matrix.tsv")
-colnames(RPPA) = sub("TCGA.","",colnames(RPPA))
-colnames(RPPA) = paste(colnames(RPPA),".01A",sep="")
+# RPPA = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/collaborations/TCPA_2015-10-30/TCGA-PANCAN16-RBN-Trans-Gene_sampleProbe_matrix.tsv")
+# colnames(RPPA) = sub("TCGA.","",colnames(RPPA))
+# colnames(RPPA) = paste(colnames(RPPA),".01A",sep="")
 ##### BRCA #####
 
 ### Proteome ###
@@ -126,6 +126,9 @@ BRCA_Pro.f = format_brca(BRCA_Pro) # retained 77 samples
 ##write.table(BRCA_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PRO_formatted.txt",sep=""))
 BRCA_Pro.n = normalize_by_sample(BRCA_Pro.f)
 #write.table(BRCA_Pro.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PRO_formatted_normalized.txt",sep=""))
+BRCA_Pro.n_10NA = BRCA_Pro.n[rowSums(!is.na(BRCA_Pro.n))>=10,]
+#write.table(BRCA_Pro.n_10NA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PRO_formatted_normalized_max10NA.txt",sep=""))
+
 
 ### RPPA ###
 BRCA_RPPA = RPPA[,colnames(RPPA) %in% colnames(BRCA_Pro.f)]
@@ -165,6 +168,9 @@ BRCA_Pho.f = format_brca(BRCA_Pho)
 #write.table(BRCA_Pho.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PHO_formatted.txt",sep=""))
 BRCA_Pho.n = normalize_by_sample(BRCA_Pho.f)
 #write.table(BRCA_Pho.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PHO_formatted_normalized.txt",sep=""))
+BRCA_Pho.n_10NA = BRCA_Pho.n[rowSums(!is.na(BRCA_Pho.n))>=10,]
+#write.table(BRCA_Pho.n_10NA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PHO_formatted_normalized_max10NA.txt",sep=""))
+
 
 ### Normalize Phospho by proteome ### 
 # match genes and samples
@@ -175,6 +181,8 @@ BRCA_Pho_by_Pro.f = BRCA_Pho.f.g - BRCA_Pro.f.g
 #write.table(BRCA_Pho_by_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PHO_by_PRO_formatted.txt",sep=""))
 BRCA_Pho_by_Pro.n = normalize_by_sample(BRCA_Pho_by_Pro.f)
 #write.table(BRCA_Pho_by_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PHO_by_PRO_formatted_normalized.txt",sep=""))
+BRCA_Pho_by_Pro.n_10NA = BRCA_Pho_by_Pro.n[rowSums(!is.na(BRCA_Pho_by_Pro.n))>=10,]
+#write.table(BRCA_Pho_by_Pro.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"BRCA/BRCA_PHO_by_PRO_formatted_normalized_max10NA.txt",sep=""))
 
 ### Clinical ###
 BRCA_Clin = read.table(row.names=1, header=TRUE, sep="\t", quote = "", file="/Users/khuang/Box\ Sync/PhD/germline/pan8000_germline_clinical/clinical_association/20150916_20150821v2_stddate_clinical_all_cancer_type_pan7943/BRCA_clinical.txt")
@@ -233,6 +241,8 @@ OV_JHU_Pro.f = format_ov(OV_JHU_Pro)
 #write.table(OV_JHU_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_JHU_PRO_formatted.txt",sep=""))
 OV_JHU_Pro.n = normalize_by_sample(OV_JHU_Pro.f)
 #write.table(OV_JHU_Pro.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_JHU_PRO_formatted_normalized.txt",sep=""))
+OV_JHU_Pro.n_10NA = OV_JHU_Pro.n[rowSums(!is.na(OV_JHU_Pro.n))>=10,]
+#write.table(OV_JHU_Pro.n_10NA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_JHU_PRO_formatted_normalized_max10NA.txt",sep=""))
 
 # exclude control
 OV_JHU_Pro.f_u = OV_JHU_Pro.f[,-c(grep(".*CONTROL.*",colnames(OV_JHU_Pro.f)))]
@@ -244,6 +254,8 @@ OV_PNNL_Pro.f = format_ov(OV_PNNL_Pro)
 #write.table(OV_PNNL_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PRO_formatted.txt",sep=""))
 OV_PNNL_Pro.n = normalize_by_sample(OV_PNNL_Pro.f)
 #write.table(OV_PNNL_Pro.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PRO_formatted_normalized.txt",sep=""))
+OV_PNNL_Pro.n_10NA = OV_PNNL_Pro.n[rowSums(!is.na(OV_PNNL_Pro.n))>=10,]
+#write.table(OV_PNNL_Pro.n_10NA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PRO_formatted_normalized_max10NA.txt",sep=""))
 
 OV_PNNL_Pro.n_noJHU = OV_PNNL_Pro.n[,!(colnames(OV_PNNL_Pro.n) %in% colnames(OV_JHU_Pro.n_u))]
 OV_Pro_no_overlap = merge(OV_JHU_Pro.n_u, OV_PNNL_Pro.n_noJHU, by="row.names",all=F)
@@ -272,6 +284,8 @@ colnames(OV_JHU_Pro.f) %in% ov_s
 #write.table(OV_PNNL_Pho.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PHO_formatted.txt",sep=""))
 OV_PNNL_Pho.n = normalize_by_sample(OV_PNNL_Pho.f)
 #write.table(OV_PNNL_Pho.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PHO_formatted_normalized.txt",sep=""))
+OV_PNNL_Pho.n_10NA = OV_PNNL_Pho.n[rowSums(!is.na(OV_PNNL_Pho.n))>=10,]
+#write.table(OV_PNNL_Pho.n_10NA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PHO_formatted_normalized_max10NA.txt",sep=""))
 
 ### Normalize Phospho by proteome ### 
 # match genes and samples
@@ -283,6 +297,8 @@ OV_PNNL_Pho_by_Pro.f = OV_PNNL_Pho.f.g - OV_PNNL_Pro.f.g
 #write.table(OV_PNNL_Pho_by_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PHO_by_PRO_formatted.txt",sep=""))
 OV_PNNL_Pho_by_Pro.n = normalize_by_sample(OV_PNNL_Pho_by_Pro.f)
 #write.table(OV_PNNL_Pho_by_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PHO_by_PRO_formatted_normalized.txt",sep=""))
+OV_PNNL_Pho_by_Pro.n_10NA = OV_PNNL_Pho_by_Pro.n[rowSums(!is.na(OV_PNNL_Pho_by_Pro.n))>=10,]
+#write.table(OV_PNNL_Pho_by_Pro.n_10NA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"OV/OV_PNNL_PHO_by_PRO_formatted_normalized_max10NA.txt",sep=""))
 
 ### Glycoproteome ###
 OV_JHU_Gly = read.table(header=TRUE, sep="\t", check.names=F, file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201507_pancan_proteome_CDAP_r2/OV/JHU_Glycoproteome_CDAP.r2/TCGA_Ovarian_JHU_Glycoproteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
@@ -322,12 +338,12 @@ tOV_Clin_f_s2 = tOV_Clin_f2[,colnames(tOV_Clin_f2) %in% ov_s]
 CRC_mut = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201511_pancan_somatic/COADREAD_proteomic_dbFilter.maf.matrix_trv.txt")
 CRC_mut_s = format_mut(CRC_mut)
 ##CRC_mut_s = CRC_mut_s[,-ncol(CRC_mut_s)] # tumor sample barcode
-write.table(CRC_mut_s, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_SOMATIC_formatted.txt",sep=""))
+#write.table(CRC_mut_s, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_SOMATIC_formatted.txt",sep=""))
 
 CRC_mut_aa = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201511_pancan_somatic/COADREAD_proteomic_dbFilter.maf.matrix.txt")
 CRC_mut_aa_s = format_mut(CRC_mut_aa)
 ##CRC_mut_aa_s = CRC_mut_aa_s[,colnames(CRC_mut_s) %in% CRC_s2]
-write.table(CRC_mut_aa_s, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_SOMATIC_formatted_amino_acid.txt",sep=""))
+#write.table(CRC_mut_aa_s, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_SOMATIC_formatted_amino_acid.txt",sep=""))
 
 ### CNV ###
 CRC_CNV = read.table(na.strings="NA ",row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/data/201507_pancan_CNV/CRC_88_CNV.txt")
@@ -349,8 +365,10 @@ CRC_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/pr
 CRC_Pro.f = format_crc(CRC_Pro)
 CRC_Pro.f = CRC_Pro.f[,-c(ncol(CRC_Pro.f),which(duplicated(colnames(CRC_Pro.f))))]
 #write.table(CRC_Pro.f, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_PRO_formatted.txt",sep=""))
-CRC_Pro.f = normalize_crc(CRC_Pro.f)
+CRC_Pro.n = normalize_crc(CRC_Pro.f)
 #write.table(CRC_Pro.n, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_PRO_formatted_normalized.txt",sep=""))
+CRC_Pro.n_10NA = CRC_Pro.n[rowSums(!is.na(CRC_Pro.n))>=10,]
+#write.table(CRC_Pro.n_10NA, col.names=NA, quote=F, sep = '\t', file=paste(baseD,"CRC/CRC_PRO_formatted_normalized_max10NA.txt",sep=""))
 
 ### RPPA ###
 CRC_RPPA = RPPA[,colnames(RPPA) %in% colnames(CRC_Pro.f)]
