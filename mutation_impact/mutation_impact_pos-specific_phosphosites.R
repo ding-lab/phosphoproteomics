@@ -113,20 +113,19 @@ plot_mut_heatmap = function (Mgene, gene){
   bound = max(max(gene_all_lvl$Expression,na.rm=T), -min(gene_all_lvl$Expression,na.rm=T)) 
   #min_bound = min(gene_all_lvl$Expression,na.rm=T) 
   
-  fn = paste(pd, Mgene, gene, "mutational_impact_pos.pdf", sep="_")
   p = ggplot(data=gene_all_lvl)
-  p = p + facet_grid(Dataset ~ ., drop=T, scales = "free_x", space = "free")
-  #p = p + facet_wrap(~Dataset, ncol=1, scales = "free_x", drop=TRUE)
-  p = p + geom_tile(aes(x=Amino_acid_change_u, y=Phosphosite, fill=as.numeric(Expression)), linetype="blank") + scale_fill_gradientn(name= "Average expression difference", na.value=NA, colours=RdBu1024, limit=c(-bound,bound))
-  #p = p + geom_tile(aes(x=Var2, y=Var1, color=sig), fill=NA, size=0.5) + scale_colour_manual(name=paste("FDR <= 0.1"),values = fdr.colors)
+  p = p + facet_grid(Dataset ~ ., drop=T, scales = "free", space = "free")
+  p = p + geom_point(aes(x=Amino_acid_change_u, y=Phosphosite, color=as.numeric(Expression))) 
+  p = p + scale_color_gradientn(name= "Average expression difference", na.value=NA, colours=RdBu1024, limit=c(-bound,bound))
   p = p + labs(x = paste(Mgene,"Mutation"), y = "")#paste(gene, "Expression"))
-  p = p + theme_bw() + theme_nogrid() +
-    theme(axis.title = element_text(size=14), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=8), 
+  p = p + theme_bw()
+  p = p + theme(axis.title = element_text(size=14), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=8), 
           axis.text.y = element_text(colour="black", size=12), axis.ticks = element_blank())#element_text(colour="black", size=16))
-  p = p + coord_equal()
   #p = p + theme(legend.position="none")
   p
-  ggsave(file=fn, height=num_sites*1, width = num_mut*0.2, useDingbats=FALSE)
+  fn = paste(pd, Mgene, gene, "mutational_impact_pos.pdf", sep="_")
+  ggsave(file=fn, useDingbats=FALSE)
+  #ggsave(file=fn, height=num_sites*1, width = num_mut*0.2, useDingbats=FALSE)
   
   ## plot a version 
   # plot violin plots faceted by marker genes
@@ -147,6 +146,71 @@ plot_mut_heatmap = function (Mgene, gene){
 #   p
 #   ggsave(file=fn, height = num_sites*1.5, limitsize=FALSE, useDingbats=FALSE)
   
+}
+
+plot_mut_pho_profile = function (Mgene, gene){
+  BRCA_mut_gene = data.frame(t(BRCA_mut[Mgene,]))
+  BRCA_mut_gene$carrier = as.character(BRCA_mut_gene[,1]) != "wt" & as.character(BRCA_mut_gene[,1]) != "silent"
+  BRCA_Pho_gene = t(BRCA_Pho[BRCA_Pho_genes == gene,])
+  
+  # merge by sample
+  BRCA_Pho_merge = merge(BRCA_mut_gene, BRCA_Pho_gene, by = "row.names")
+  # compute relative to wild-type samples
+  for (phosite in colnames(BRCA_Pho_merge)[4:length(colnames(BRCA_Pho_merge))]){
+    BRCA_Pho_merge[,phosite] = BRCA_Pho_merge[,phosite] - mean(BRCA_Pho_merge[!BRCA_Pho_merge$carrier,phosite],na.rm=T)
+  }
+  BRCA_Pho_merge$data = "BRCA_PHO"
+  BRCA_Pho_merge = BRCA_Pho_merge[BRCA_Pho_merge$carrier,]
+    
+  OV_mut_gene = data.frame(t(OV_mut[Mgene,]))
+  OV_mut_gene$carrier = as.character(OV_mut_gene[,1]) != "wt" & as.character(OV_mut_gene[,1]) != "silent"
+  OV_Pho_gene = t(OV_Pho[OV_Pho_genes == gene,])
+  
+  # merge by sample
+  OV_Pho_merge = merge(OV_mut_gene, OV_Pho_gene, by = "row.names")
+  if (length(colnames(OV_Pho_merge)) > 4){
+    for (phosite in colnames(OV_Pho_merge)[4:length(colnames(OV_Pho_merge))]){
+      OV_Pho_merge[,phosite] = OV_Pho_merge[,phosite] - mean(OV_Pho_merge[!OV_Pho_merge$carrier,phosite],na.rm=T)
+    }
+  }
+  
+  OV_Pho_merge$data = "OV_PHO"
+  OV_Pho_merge = OV_Pho_merge[OV_Pho_merge$carrier,]
+  
+  BRCA_Pho_merge_m = melt(BRCA_Pho_merge, id =c("Row.names","carrier",Mgene,"data"))
+  OV_Pho_merge_m = melt(OV_Pho_merge, id =c("Row.names","carrier",Mgene,"data"))
+  
+  if (ncol(BRCA_Pho_merge_m) == ncol(OV_Pho_merge_m)){
+    gene_all_lvl = rbind(BRCA_Pho_merge_m,OV_Pho_merge_m)
+  } else {gene_all_lvl = BRCA_Pho_merge_m}
+  
+  colnames(gene_all_lvl) = c("Sample","Mutation_Status","Amino_acid_change","Dataset","Phosphosite","Expression")
+  
+  # this line is optional: whether to remove samples with all NA or not
+  gene_all_lvl = gene_all_lvl[!is.na(gene_all_lvl$Expression),]
+  
+  # current solution do not account for dual sites
+  gene_all_lvl$pho_pos = sub(".*:[a-z]","",gene_all_lvl$Phosphosite)
+  gene_all_lvl$pho_pos = as.numeric(gene_all_lvl$pho_pos) 
+  #gene_all_lvl$pho_pos = sub(".*[a-z]([0-9]+)","\\1",gene_all_lvl$Phosphosite)
+
+  bound = max(max(gene_all_lvl$Expression,na.rm=T), -min(gene_all_lvl$Expression,na.rm=T)) 
+  
+  p = ggplot(data=gene_all_lvl)
+  p = p + facet_grid(Dataset ~ ., drop=T, scales = "free", space = "free")
+  p = p + geom_point(aes(x=pho_pos, y=Expression, color=as.factor(Sample)))
+  p = p + geom_text(aes(x=pho_pos, y=Expression, label=ifelse(Expression > 0.5, as.character(Amino_acid_change),NA),vjust=1,alpha = 0.5))
+  #p = p + scale_color_gradientn(na.value=NA, colours=RdBu1024, limit=c(-bound,bound))#,name= "Average expression difference", )
+  p = p + labs(x = paste(Mgene," protein coordinate"), y = paste(gene,"phosphorylation ratio to wt samples"))#paste(gene, "Expression"))
+  p = p + theme_bw()
+  p = p + theme(axis.title = element_text(size=14), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=8), 
+                axis.text.y = element_text(colour="black", size=12), axis.ticks = element_blank())#element_text(colour="black", size=16))
+  p = p + theme(legend.position="none")
+  p
+  fn = paste(pd, Mgene, gene, "mutational_impact_pos.pdf", sep="_")
+  ggsave(file=fn, useDingbats=FALSE)
+  #ggsave(file=fn, height=num_sites*1, width = num_mut*0.2, useDingbats=FALSE)
+
 }
 
 # plot any pair of interest
@@ -174,10 +238,14 @@ if (FALSE){
   plot_mut_heatmap("GATA3","GATA3")
   plot_mut_heatmap("EGFR","EGFR")
   plot_mut_heatmap("PIK3CA","PIK3CA")
-  
-  
   plot_mut_heatmap("IGF1R","IGF1R")
+  
+  plot_mut_pho_profile("TP53","TP53")
+  plot_mut_pho_profile("GATA3","GATA3")
+  plot_mut_pho_profile("EGFR","EGFR")
+  plot_mut_pho_profile("PIK3CA","PIK3CA")
+  plot_mut_pho_profile("IGF1R","IGF1R")
 }
-
+plot_mut_heatmap("ERBB2","ERBB2")
 gene = "TP53"
 Mgene = "TP53"

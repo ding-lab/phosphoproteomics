@@ -93,7 +93,7 @@ fdr.colors=c("NA", "#000000")
 min_d = min(as.numeric(as.character(fc_fdr$FC)), na.rm=T)
 max_d = max(as.numeric(as.character(fc_fdr$FC)), na.rm=T)
 bound = max(c(max_d, -min_d))
-fc_fdr$sig = as.numeric(as.character(fc_fdr$FDR)) <= 0.1
+fc_fdr$sig = as.numeric(as.character(fc_fdr$FDR)) < 0.05
 fc_fdr$FC_2 = as.numeric(fc_fdr$FC)
 fc_fdr[!is.na(fc_fdr$FC_2) & fc_fdr$FC_2>=2,]$FC_2=2
 fc_fdr[!is.na(fc_fdr$FC_2) & fc_fdr$FC_2<=-2,]$FC_2=-2
@@ -109,7 +109,7 @@ p = ggplot(data=fc_fdr.v)
 #p = p + facet_grid(.~variable, scales = "fixed", space = "free", drop=TRUE)
 p = p + facet_wrap(~variable, nrow=1, scales = "free_x", drop=TRUE)
 p = p + geom_tile(aes(x=Var2, y=Var1, fill=as.numeric(FC_2)), linetype="blank") + scale_fill_gradientn(name= "Average expression difference", na.value=NA, colours=RdBu1024, limit=c(-2,2))
-p = p + geom_tile(aes(x=Var2, y=Var1, color=sig), fill=NA, size=0.5) + scale_colour_manual(name=paste("FDR <= 0.1"),values = fdr.colors)
+p = p + geom_tile(aes(x=Var2, y=Var1, color=sig), fill=NA, size=0.5) + scale_colour_manual(name=paste("FDR < 0.05"),values = fdr.colors)
 p = p + labs(x="Mutated Gene", y="Expression") + theme_bw() + 
   theme(axis.title = element_text(size=16), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=10), axis.text.y = element_text(colour="black", size=6),axis.ticks = element_blank())#element_text(colour="black", size=16))
 p = p + coord_equal()
@@ -121,21 +121,21 @@ ggsave(file=fn, width=10.5, height=32, useDingbats=FALSE)
 for (i in 3:4){
   fdr[,i] = as.numeric(as.character(fdr[,i]))
 }
-markers = unique(fdr[rowSums(fdr[,c(3:4)]<=0.1, na.rm=T) >=1,]$Var1)
+markers = unique(fdr[rowSums(fdr[,c(3:4)]<0.05, na.rm=T) >=1,]$Var1)
 fc_fdr_s = fc_fdr.v[fc_fdr.v$Var1 %in% as.character(markers),]
 #fc_fdr_s2 = fc_fdr_s[fc_fdr_s$FDR<=0.2,]
 
-fn = paste(pd, 'phosphosites_merged_diff_exp_cgenes_druggable_fdr0.1in1.pdf',sep ="_")
+fn = paste(pd, 'phosphosites_merged_diff_exp_cgenes_druggable_fdr0.05in1.pdf',sep ="_")
 p = ggplot(data=fc_fdr_s)
 #p = p + facet_grid(.~variable, drop=T, scales = "free", space = "free")
 p = p + facet_wrap(~variable, nrow=1, scales = "free_x", drop=TRUE)
 p = p + geom_tile(aes(x=Var2, y=Var1, fill=as.numeric(FC_2)), linetype="blank") + scale_fill_gradientn(name= "Average expression difference", na.value=NA, colours=RdBu1024, limit=c(-2,2))
-p = p + geom_tile(aes(x=Var2, y=Var1, color=sig), fill=NA, size=0.5) + scale_colour_manual(name=paste("FDR <= 0.1"),values = fdr.colors)
+p = p + geom_tile(aes(x=Var2, y=Var1, color=sig), fill=NA, size=0.5) + scale_colour_manual(name=paste("FDR < 0.05"),values = fdr.colors)
 p = p + labs(x="Mutated Gene", y="Expression") + theme_bw() + 
   theme(axis.title = element_text(size=16), axis.text.x = element_text(angle = 90, vjust = 0.5, colour="black", size=10), axis.text.y = element_text(colour="black", size=10),axis.ticks = element_blank())#element_text(colour="black", size=16))
 p = p + coord_fixed()
 p
-ggsave(file=fn, width=8, height=20, useDingbats=FALSE)
+ggsave(file=fn, width=8, height=13, useDingbats=FALSE)
 
 ### for grant ### 
 if (FALSE){

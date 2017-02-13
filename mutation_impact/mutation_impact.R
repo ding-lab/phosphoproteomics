@@ -16,12 +16,13 @@ length(unique(k_s_table$SUB_GENE))
 
 kinome = as.vector(t(kinaseList))
 druggable = as.vector(t(drugList))
-#druggable = as.vector(t(cancer_genes))
+cancer_genes = as.vector(t(cancer_genes))
 druggable_k = druggable[druggable %in% c(k_s_table$GENE,k_s_table$SUB_GENE)]
 SMGs = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "KMT2C","TP53", "NF1", "KRAS", "BRCA1", "BRCA2", "CDK12",
          "TP53","KRAS","APC","PIK3CA","SMAD4")
 SMGs = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1", "TP53", "NF1", "KRAS", "BRCA1", "BRCA2")
-druggable_k = c(druggable_k,SMGs)
+SMG_sub = k_s_table$SUB_GENE[k_s_table$GENE %in% SMGs]
+druggable_k = c(druggable_k,SMGs,SMG_sub)
 
 brcaGenes = c("TP53", "PIK3CA", "CDH1", "GATA3", "MAP3K1","BRCA1","BRCA2")
 ovGenes = c("TP53", "NF1", "KRAS", "BRCA1", "BRCA2")
@@ -104,6 +105,7 @@ find_diff_exp = function(mut, exp, name="data", fdr_cutoff=0.1){
   #   t_fdr = matrix(,nrow=nrow(exp),ncol=0)
   fold_change = vector("list")
   t_fdr = vector("list")
+  t_p = vector("list")
   geneList2 = c()
   for (gene in row.names(mut)){
     #for (gene in geneList){
@@ -126,6 +128,10 @@ find_diff_exp = function(mut, exp, name="data", fdr_cutoff=0.1){
     t_fdr[[gene]] = gene_fdr
     #t_fdr = cbind(t_fdr, gene_fdr)
     
+    gene_p = diff_x[,"t_test_p",drop=F]
+    colnames(gene_p) = gene
+    t_p[[gene]] = gene_p
+    
     # extract only the significant markers
     #     markers = row.names(gene_fdr)[as.numeric(gene_fdr[,1]) <= fdr_cutoff]
     #     if (length(markers)==0 || is.na(markers[1])){next}
@@ -140,9 +146,10 @@ find_diff_exp = function(mut, exp, name="data", fdr_cutoff=0.1){
   }
   fold_change_m = do.call(cbind,fold_change)
   t_fdr_m = do.call(cbind,t_fdr)
+  t_p_m = do.call(cbind,t_p)
   
   plot_diff_exp_heatmap(fold_change_m, t_fdr_m, name=name)
-  return(list("fold_change"=fold_change, "t_fdr"=t_fdr))
+  return(list("fold_change"=fold_change, "t_fdr"=t_fdr, "t_p"=t_p))
 }
 
 ### plot_diff_exp : plot heatmap of differentially expressed genes from find_diff_exp ###

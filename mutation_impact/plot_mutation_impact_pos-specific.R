@@ -109,9 +109,9 @@ plot_diff_exp_violin_c = function (Mgene, gene){
   fn = paste(pd, Mgene, gene, "mutational_impact_violin.pdf", sep="_")
   p = ggplot(data=gene_all_lvl)
   p = p + facet_grid(Dataset~., scale="free_y")
-  p = p + geom_point(aes(x=mut_pos, y=Expression, color=type),alpha=0.1) + guides(fill=FALSE) 
+  p = p + geom_point(aes(x=mut_pos, y=Expression, color=type),alpha=0.3) #+ guides(fill=FALSE) 
   p = p + labs(x = paste(Mgene,"Mutation Position"), y = paste(gene, "Expression")) + theme_bw()
-  p = p + geom_text(aes(x=mut_pos, y=Expression, label = Mutation, color=type, stringsAsFactors=FALSE), size=2,alpha=0.8)
+  p = p + geom_text(aes(x=mut_pos, y=Expression, label = ifelse(Expression > 1,Mutation,NA), color=type, stringsAsFactors=FALSE), size=2,alpha=0.8)
   p = p + theme(text = element_text(colour="black", size=16), axis.text.x = element_text(colour="black", size=14), 
                 axis.text.y = element_text(colour="black", size=14), strip.text = element_text(size = 8))
   p
@@ -159,9 +159,9 @@ plot_diff_exp_violin_brca = function (Mgene, gene){
   fn = paste(pd, Mgene, gene, "mutational_impact_violin.pdf", sep="_")
   p = ggplot(data=gene_all_lvl)
   p = p + facet_grid(Dataset~., scale="free_y")
-  p = p + geom_point(aes(x=mut_pos, y=Expression, color=type),alpha=0.1) + guides(fill=FALSE) 
+  p = p + geom_point(aes(x=mut_pos, y=Expression, color=type),alpha=0.3) #+ guides(fill=FALSE) 
   p = p + labs(x = paste(Mgene,"Mutation Position"), y = paste(gene, "Expression")) + theme_bw()
-  p = p + geom_text(aes(x=mut_pos, y=Expression, label = Mutation, color=type, stringsAsFactors=FALSE), size=2,alpha=0.8)
+  p = p + geom_text(aes(x=mut_pos, y=Expression, label = ifelse(Expression > 1,Mutation,NA), color=type, stringsAsFactors=FALSE), size=2,alpha=0.8)
   p = p + theme(text = element_text(colour="black", size=16), axis.text.x = element_text(colour="black", size=14), 
                 axis.text.y = element_text(colour="black", size=14), strip.text = element_text(size = 8))
   p
