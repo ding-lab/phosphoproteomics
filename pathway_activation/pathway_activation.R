@@ -14,7 +14,7 @@ library(biomaRt)
 # Get list KEGG and REACT for analysis
 load("/Users/khuang/bin/2015-08-01_Gene_Set.RData")
 
-KEGG_signaling = KEGG[grep("signaling", names(KEGG))]
+KEGG_signaling = KEGG[c(grep("signaling", names(KEGG)),which(names(KEGG)=="hsa04110\tCell cycle"))]
 
 ##### Can also get other pathways from Broad's GSEA website #####
 # test for gene set activation using z-score
