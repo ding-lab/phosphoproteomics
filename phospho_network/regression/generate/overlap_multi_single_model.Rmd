@@ -1,0 +1,80 @@
+---
+title: "overlap multi-kinase-model with single-kinase-model"
+author: "Yige Wu"
+date: "March 2, 2017"
+output: html_document
+params:
+  protein: "kinase"
+  baseD: "/Users/yigewu/Box\ Sync/"
+  cancer: "BRCA"
+  sig: 0.05
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_packages, results='hide', include=FALSE}
+library(stringr)
+library(ggplot2)
+library(reshape)
+library(grid)
+require(plyr)
+```
+
+``` {r input}
+table_single <- read.delim(paste(params$baseD,"pan3can_shared_data/analysis_results/tables/",params$protein,"_substrate_regression_trans_edited.txt",sep = ""))
+table_multi <- read.delim(paste(params$baseD,"pan3can_shared_data/analysis_results/tables/multi_",params$protein,"_substrate_regression.txt",sep = ""))
+
+```
+
+``` {r overlap_results}
+table_multi_tmp <- table_multi[table_multi$Cancer == params$cancer & !table_multi$self,]
+table_can_tmp <- table_single[table_single$Cancer == params$cancer & !table_single$self,]
+
+merge_id <- c("KINASE","SUBSTRATE","SUB_MOD_RSD","pair")
+merge_cols <- c(merge_id,"FDR_pho_kin","coef_pho_kin","model","Size")
+table_overlap <- merge(table_multi_tmp[,merge_cols],table_can_tmp[,merge_cols], by = merge_id)
+write.table(table_overlap, file = paste(params$baseD,"pan3can_shared_data/analysis_results/tables/multi-model_single-model_overlap4",params$protein,"_table.txt",sep = ""), row.names = FALSE)
+```
+
+``` {r overlap_statistics, echo=FALSE }
+# how many overlaped
+time <- Sys.time()
+sink(file = paste(params$baseD,"pan3can_shared_data/analysis_results/logs/significance_change_highlight_regulating_kinase_fdr_",params$sig,"_",time,".txt",sep = ""))
+
+cat(paste("multi-model overlap with single-model ",params$cancer," trans regression result:\n",
+          nrow(table_overlap)," kinase:substrate:phosphosite pairs (",
+          nrow(table_multi_tmp)," multi-model pairs vs ",
+          nrow(table_can_tmp)," single-model pairs)\n\n",
+          sep = ""))
+
+# overlapped ones: significant or not before/after
+table_overlap$sig_multi <- table_overlap$FDR_pho_kin.x < params$sig
+table_overlap$sig_single <- table_overlap$FDR_pho_kin.y < params$sig
+
+sig_change <- data.frame(table(table_overlap[,c("sig_single","sig_multi")]))
+print.default(as.matrix(sig_change), rowlab=character(0))
+
+```
+
+``` {r single_sig_multi_insig}
+# find out which substrate of these kinases still significantly regulated by at least one kinase
+
+substrates <- as.vector(table_overlap$SUBSTRATE)
+rsds <- as.vector(table_overlap$SUB_MOD_RSD)
+for (i in which(table_overlap$sig_single & !table_overlap$sig_multi)) {
+  substrate <- substrates[i]
+  rsd <- rsds[i]
+  #table_old <- table_single[table_single$SUBSTRATE==substrate & table_single$SUB_MOD_RSD==rsd & !table_single$self,]
+  table_new <- table_multi_tmp[table_multi_tmp$SUBSTRATE==substrate & table_multi_tmp$SUB_MOD_RSD==rsd,]
+  kin_sig <- unique(table_new$KINASE[table_new$FDR_pho_kin < params$sig])
+  rsd_sig <- unique(table_new$SUB_MOD_RSD[table_new$FDR_pho_kin < params$sig])
+
+  if (length(kin_sig) > 0) {
+    cat(paste("\nsig to insig:",table_overlap$KINASE[i],":",substrate,":",rsd,"\n",
+              "still significant:",kin_sig,":",substrate,":",rsd_sig,"\n", sep = ""))
+  }
+}
+sink()
+```

@@ -4,10 +4,12 @@
 # find activated KEGG pathway through z-score of proteome and phosphoproteomes
 # plot the protein and phosphoprotein data to the KEGG pathway
 
-base = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/"
-baseD = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+#base = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/"
+#baseD = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+baseD = "/Users/yigewu/Box\ Sync/"
+base = "/Users/yigewu/Box\ Sync/pan3can_analysis/"
 setwd(paste(base,"pathway_activation",sep=""))
-source("/Users/khuang/bin/LIB_exp.R")
+#source("/Users/khuang/bin/LIB_exp.R")
 source(paste(base,"pathway_activation/pathway_activation.R",sep=""))
 source_date = "2015-10-09/2015-10-09"
 
@@ -60,7 +62,7 @@ format_crc = function(Pro.m){
 
 ##### Phospho data #####
 ### BRCA ###
-BRCA_Pho = read.table(row.names = 1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/BRCA/BRCA_PHO_formatted_normalized.txt")
+BRCA_Pho = read.table(row.names = 1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_PHO_formatted_normalized.txt",sep = ""))
 #BRCA_Pho.n = format_pro(BRCA_Pho)
 BRCA_Pho = as.matrix(BRCA_Pho)
 BRCA_Pho_outliers=find_outlier(BRCA_Pho, "BRCA_PHO")#, filter = F, plot=F)
@@ -151,7 +153,7 @@ grid.draw(gp)
 dev.off()
 
 ### OV PNNL ###
-OV_PNNL_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/OV/OV_PNNL_PHO_formatted_normalized.txt")
+OV_PNNL_Pho = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/OV/OV_PNNL_PHO_formatted_normalized.txt",sep = ""))
 #OV_PNNL_Pho.n = format_pro(OV_PNNL_Pho)
 OV_PNNL_Pho_pathway = KEGGpathway_activation(OV_PNNL_Pho)
 
