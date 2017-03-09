@@ -26,10 +26,71 @@ protein <- "kinase"
 
 # input PDB file and processed regression result ---------------------------------------
 PDB_site <- read_delim(paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/PDB_site.maf",sep = ""), "\t", escape_double = FALSE, trim_ws = TRUE)
-table_2can <- read.delim(paste(baseD,"pan3can_shared_data/analysis_results/regression/table/kinase_substrate_regression.txt",sep = ""))
-table1 <- table_2can[table_2can$model=="pho_sub~pro_kin",]
+table_2can <- read.delim(paste(baseD,"pan3can_shared_data/analysis_results/tables/kinase_substrate_regression_trans_edited.txt",sep = ""))
+table1 <- table_2can
 rsd_list <- str_split_fixed(PDB_site$amino_acid_change,"[p.XZ]",5)[,4]
 sub_list <- as.vector(PDB_site$Hugo_Symbol)
+
+# prepare the pairwise file and PDB file ----------------------------------
+# pairwise <- read_delim(paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/PDB_cptac.brca.ov_sites.pairwise.singleprotein.collapsed",sep = ""), "\t", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
+pairwise_brca <- read_delim(paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/BRCA_phosphosite_within_protein_distance_and_correlation.txt", sep=""),"\t", escape_double = FALSE, trim_ws = TRUE)
+pairwise <- pairwise_brca
+
+rsd1_pair <-  str_split_fixed(pairwise$RSD1,"[p.XSTYCZ]",5)[,4]
+rsd2_pair <-  str_split_fixed(pairwise$RSD2,"[p.XSTYCZ]",5)[,4]
+gene1_pair <- as.vector(pairwise$Gene1)
+
+rsd_pdb <- str_split_fixed(PDB_site$amino_acid_change,"[p.XSTYCZ]",5)[,4]
+cat_pdb <- str_split_fixed(PDB_site$Tumor_Sample_Barcode,":",2)[,1]
+
+# mark the active sites for PDB_site and mark pairwise data ---------------
+rsd1_cat <- vector(mode = "character", length = nrow(pairwise)); rsd2_cat <- rsd1_cat
+for( i in 1:nrow(pairwise) ) {
+  temp <- cat_pdb[PDB_site$Hugo_Symbol==gene1_pair[i] & rsd_pdb==rsd1_pair[i]]
+  if (length(temp) > 0) {
+    rsd1_cat[i] <- temp
+  }
+  temp <- cat_pdb[PDB_site$Hugo_Symbol==gene1_pair[i] & rsd_pdb==rsd2_pair[i]]
+  if (length(temp) > 0) {
+    rsd2_cat[i] <- temp
+  }
+}
+pairwise$rsd1_cat <- rsd1_cat; pairwise$rsd2_cat <- rsd2_cat
+
+# mark the pariwise data with regression result: significant/not significant/unknown ---------
+# significant means having at least one significant regression result
+table <- table_2can
+rsd_reg <- str_split_fixed(table$SUB_MOD_RSD,"[STY]",3)[,2]
+rsd1_sig <- vector(mode = "numeric", length = nrow(pairwise)); rsd2_sig <- rsd1_sig
+for( i in 1:nrow(pairwise) ) {
+  temp1 <- which((table$SUBSTRATE==gene1_pair[i]) & (rsd_reg==rsd1_pair[i]) & (table$FDR_pro_kin <= sig | table$FDR_pho_kin <= sig) )
+  rsd1_sig[i] <- length(temp1)
+  
+  temp2 <- which((table$SUBSTRATE==gene1_pair[i]) & (rsd_reg==rsd2_pair[i]) & (table$FDR_pro_kin <= sig | table$FDR_pho_kin <= sig) )
+  rsd2_sig[i] <- length(temp2)
+}
+pairwise$rsd1_sig <- rsd1_sig; pairwise$rsd2_sig <- rsd2_sig
+tn = paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/pairwise_dist_annotate_PDB&reg_2can_sig_number_fdr_",sig,".txt", sep="")
+write.table(pairwise, file=tn, quote=F, sep = '\t', row.names = FALSE)
+
+reg_pdb_overlap <- pairwise[(rsd1_sig > 0 | rsd2_sig >0) & !(rsd1_cat=="" & rsd2_cat==""),]
+reg_pdb_overlap <- reg_pdb_overlap[order(reg_pdb_overlap$Gene1),]
+tn = paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/pairwise_dist_overlap_PDB&reg_2can_sig_number_fdr_",sig,".txt", sep="")
+write.table(reg_pdb_overlap, file=tn, quote=F, sep = '\t', row.names = FALSE)
+
+length(unique(pairwise$Gene1[rsd1_cat=="ACT_SITE" | rsd2_cat=="ACT_SITE"]))
+length(unique(pairwise$Gene1[rsd1_sig > 0 | rsd2_sig >0]))
+
+# look at the distance between significant phosphosites and active sites --------
+pairwise$dis_sig <- (pairwise$rsd1_cat=="ACT_SITE" & pairwise$rsd2_sig >0 ) | (pairwise$rsd2_cat=="ACT_SITE" & pairwise$rsd1_sig >0 )
+pro_sig <- unique(pairwise$Gene1[pairwise$dis_sig])
+pairwise_act <- c()
+for( gene in pro_sig ) {
+  pairwise_act <- rbind(pairwise_act, pairwise[pairwise$Gene1==gene,])
+}
+tn = paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/BRCA_pairwise_distance_with_active_site_and_sig_",sig,"_regression.txt", sep="")
+write.table(pairwise_act, file=tn, quote=F, sep = '\t', row.names = FALSE)
+
 # bubble chart, appoint phosphosites ---------------------
 for (cis in c("cis","trans")) { # loop around cis and trans
   t0 <- table1[table1$SELF==cis & table1$FDR_pro_kin <= sig,]
@@ -63,55 +124,3 @@ for (cis in c("cis","trans")) { # loop around cis and trans
 }
 
 
-# prepare the pairwise file and PDB file ----------------------------------
-pairwise <- read_delim(paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/PDB_cptac.brca.ov_sites.pairwise.singleprotein.collapsed",sep = ""), "\t", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
-pairwise <- data.frame(pairwise[,c(1,2,6,7,12,13,14,15)])
-colnames(pairwise) <- c("Gene1","RSD1","Gene2","RSD2","dis_linear","dis_3d","PDB","pvalue_3d")
-rsd1_pair <-  str_split_fixed(pairwise$RSD1,"[p.XSTYCZ]",5)[,4]
-rsd2_pair <-  str_split_fixed(pairwise$RSD2,"[p.XSTYCZ]",5)[,4]
-pairwise$dis_lin <- abs(as.numeric(rsd2_pair)-as.numeric(rsd1_pair))
-gene1_pair <- as.vector(pairwise$Gene1)
-
-rsd_pdb <- str_split_fixed(PDB_site$amino_acid_change,"[p.XSTYCZ]",5)[,4]
-cat_pdb <- str_split_fixed(PDB_site$Tumor_Sample_Barcode,":",2)[,1]
-
-# mark the active sites for PDB_site and mark pairwise data ---------------
-rsd1_cat <- vector(mode = "character", length = nrow(pairwise)); rsd2_cat <- rsd1_cat
-for( i in 1:nrow(pairwise) ) {
-  temp <- cat_pdb[PDB_site$Hugo_Symbol==gene1_pair[i] & rsd_pdb==rsd1_pair[i]]
-  if (length(temp) > 0) {
-    rsd1_cat[i] <- temp
-  }
-  temp <- cat_pdb[PDB_site$Hugo_Symbol==gene1_pair[i] & rsd_pdb==rsd2_pair[i]]
-  if (length(temp) > 0) {
-    rsd2_cat[i] <- temp
-  }
-}
-pairwise$rsd1_cat <- rsd1_cat; pairwise$rsd2_cat <- rsd2_cat
-
-# mark the pariwise data with regression result: significant/not significant/unknown ---------
-# significant means having at least one significant regression result
-table <- table_2can[table_2can$model=="pho_sub~pro_kin" & table_2can$Cancer=="BRCA",]
-rsd_reg <- str_split_fixed(table$SUB_MOD_RSD,"[STY]",3)[,2]
-rsd1_sig <- vector(mode = "numeric", length = nrow(pairwise)); rsd2_sig <- rsd1_sig
-for( i in 1:nrow(pairwise) ) {
-  temp1 <- which((table$SUBSTRATE==gene1_pair[i]) & (rsd_reg==rsd1_pair[i]) & (table$FDR_pro_kin <= sig) )
-  rsd1_sig[i] <- length(temp1)
-  
-  temp2 <- which((table$SUBSTRATE==gene1_pair[i]) & (rsd_reg==rsd2_pair[i]) & (table$FDR_pro_kin <= sig) )
-  rsd2_sig[i] <- length(temp2)
-}
-pairwise$rsd1_sig <- rsd1_sig; pairwise$rsd2_sig <- rsd2_sig
-
-length(unique(pairwise$Gene1[rsd1_cat=="ACT_SITE" | rsd2_cat=="ACT_SITE"]))
-length(unique(pairwise$Gene1[rsd1_sig > 0 | rsd2_sig >0]))
-
-# look at the distance between significant phosphosites and active sites --------
-pairwise$dis_sig <- (pairwise$rsd1_cat=="ACT_SITE" & pairwise$rsd2_sig >0 ) | (pairwise$rsd2_cat=="ACT_SITE" & pairwise$rsd1_sig >0 )
-pro_sig <- unique(pairwise$Gene1[pairwise$dis_sig])
-pairwise_act <- c()
-for( gene in pro_sig ) {
-  pairwise_act <- rbind(pairwise_act, pairwise[pairwise$Gene1==gene,])
-}
-tn = paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/BRCA_pairwise_distance_with_active_site_and_sig_",sig,"_regression.txt", sep="")
-write.table(pairwise_act, file=tn, quote=F, sep = '\t', row.names = FALSE)
