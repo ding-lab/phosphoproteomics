@@ -15,6 +15,8 @@ library(biomaRt)
 load("/Users/khuang/bin/2015-08-01_Gene_Set.RData")
 
 KEGG_signaling = KEGG[c(grep("signaling", names(KEGG)),which(names(KEGG)=="hsa04110\tCell cycle"))]
+# 
+# REACT_signaling = REACT[c(grep("signaling", names(REACT)))]
 
 ##### Can also get other pathways from Broad's GSEA website #####
 # test for gene set activation using z-score
@@ -44,7 +46,12 @@ KEGGpathway_activation = function (m){
       inSet = rownames(sample) %in% pathway_genes
       numAllGene = length(inSet)
       numPathwayGene = table(inSet)[2]
-      if (is.na(numPathwayGene) || numPathwayGene < 3){next}
+      if (is.na(numPathwayGene) || numPathwayGene < 3){
+        a = c(hsa, pathway_name, numAllGene,numPathwayGene,NA,NA,NA,NA,NA,NA)
+        stats=rbind(stats,a)
+        row.names(stats)=NULL
+        next
+      }
       #geneSetP = geneSetTest(inSet, sample)[1]
       setExp = sample[rownames(sample) %in% pathway_genes,]
       test_sample = unlist(sample)
@@ -223,8 +230,3 @@ plotWrapWDev = function (sample, pathway){
   command= paste("mv hsa",pathway,"_profile_bg.png ",pd,"_",sample,"_",pathway,"_bg.png", sep="")
   system(command)
 }
-
-
-
-
-
