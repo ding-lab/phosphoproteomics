@@ -12,25 +12,16 @@ library(stringr)
 library(ggplot2)
 library(readr)
 
+# choose cohort and other parameters --------------------------------------
+sig <- 0.05
+# cohort <- "BRCA"
+cohort <- "OV"
 
-# input regardless to cancer type-------------------------------------------------------------------
-### read in the kinase/substrate table/ phosphorylation data ###
-K_S_f = paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphositePlus/data/Kinase_Substrate_Dataset_human_final_hugoified.txt",sep="")
-k_s_table = read.delim(K_S_f)
-
+# other input-------------------------------------------------------------------
 #function for normalize the variables for regression
 range01 <- function(x, ...){(x - min(x, ...)) / (max(x, ...) - min(x, ...))}
 
-
-unique_kinase <- unique(k_s_table$GENE)
-unique_substrate <- as.vector(unique(k_s_table$SUB_GENE))
-
-least_samples <- 5
-out_thres <- 1.5
-sig <- 0.05
-
 # input phosphorylation data-------------------------------------------------------------------
-cohort <- "BRCA"
 if (cohort == "BRCA") {
   BRCA_pho_f = paste(baseD,"pan3can_shared_data/BRCA/TCGA_Breast_BI_Phosphoproteome.phosphosite.itraq_abbrev_normlized_max10NA_wGpos.txt",sep="")
   pho_data = read.delim(BRCA_pho_f)
@@ -156,26 +147,33 @@ write.table(phosite_corr, file=tn, quote=F, sep = '\t', row.names = FALSE)
 
 # fill the cor_stat into pairwise table -----------------------------------
 coef_corr <- vector(mode = "numeric", length = nrow(pairwise)) + NA
-fdr_corr <- coef_corr
+fdr_corr <- coef_corr;
+rsd1 <- vector(mode = "character", length = (nrow(pairwise))); rsd2 <- rsd1
 rsd1_list <-  str_split_fixed(pairwise$RSD1,"[p.XSTYCZ]",5)[,4]
 rsd2_list <-  str_split_fixed(pairwise$RSD2,"[p.XSTYCZ]",5)[,4]
 gene1_list <- as.vector(pairwise$Gene1)
 pairwise$dis_lin <- abs(as.numeric(rsd2_list)-as.numeric(rsd1_list))
+RSD1_list <- as.vector(phosite_corr$RSD1); RSD2_list <- as.vector(phosite_corr$RSD2)
 
 rsd1_corr <- str_split_fixed(phosite_corr$RSD1,"[STY]",3)[,2]
 rsd2_corr <- str_split_fixed(phosite_corr$RSD2,"[STY]",3)[,2]
-
+  
 for (i in 1:nrow(pairwise)) {
   rows1 <- which( (phosite_corr$GENE1==gene1_list[i])  & (rsd1_corr==rsd1_list[i]) & (rsd2_corr==rsd2_list[i]) )
-  rows2 <- which( (phosite_corr$GENE1==gene1_list[i])  & (rsd1_corr==rsd2_list[i]) & (rsd2_corr==rsd2_list[i]) )
+  rows2 <- which( (phosite_corr$GENE1==gene1_list[i])  & (rsd1_corr==rsd2_list[i]) & (rsd2_corr==rsd1_list[i]) )
   rows <- c(rows1,rows2)
   if (length(rows) > 0) {
     coef_corr[i] <- phosite_corr$coef[rows]
     fdr_corr[i] <- phosite_corr$fdr[rows]
+    rsd1[i] <- RSD1_list[rows]
+    rsd2[i] <- RSD2_list[rows]
   }
 }
 pairwise$coef_corr <- coef_corr
 pairwise$fdr_corr <- fdr_corr
+pairwise$rsd1 <- rsd1
+pairwise$rsd2 <- rsd2
+pairwise$pair <- paste(gene1_list,rsd1,rsd2, sep = ":")
 
 ## write out tables
 tn = paste(baseD,"pan3can_shared_data/analysis_results/hotspot3d/table/",cohort,"_phosphosite_within_protein_distance_and_correlation.txt", sep="")
@@ -185,105 +183,5 @@ pairwise_pos <- pairwise[!is.na(pairwise$fdr_corr) & pairwise$coef_corr > 0, ]
 pairwise_neg <- pairwise[!is.na(pairwise$fdr_corr) & pairwise$coef_corr < 0, ]
 
 
-# plot correlation between coef_corr and distances ------------------------
-pairwise$pair <- paste(gene1_list,rsd1_list,rsd2_list,sep = ":")
-p = ggplot(data = pairwise, aes(x = dis_3d , y = coef_corr))
-p = p + geom_smooth(method = "glm", se=FALSE, color="black", formula = y ~ x)
-p = p + geom_point(alpha=0.1)
-p = p + geom_text(aes(label= ifelse(fdr_corr < sig, pair, NA )),size=2,alpha=0.5)
-p = p + ylim(c(-1,1))
-p
-
-fn = paste(baseD,'pan3can_shared_data/analysis_results/hotspot3d/within_protein_',cohort,'_distance_3d_and_coef_corr_correlation.png',sep ="")
-ggsave(file=fn, height=8, width=8)
-
-limx <- 350
-p = ggplot(data = pairwise[pairwise$dis_lin<limx,], aes(x = dis_lin , y = coef_corr))
-p = p + geom_smooth(method = "glm", se=FALSE, color="black", formula = y ~ x)
-p = p + geom_point(alpha=0.1)
-p = p + geom_text(aes(label= ifelse(fdr_corr < sig, pair, NA )),size=2,alpha=0.5)
-p = p + ylim(c(-1,1))
-p
-
-fn = paste(baseD,'pan3can_shared_data/analysis_results/hotspot3d/within_protein_',cohort,'_distance_linear_and_coef_corr_correlation_max',limx,'.png',sep ="")
-ggsave(file=fn, height=8, width=8)
-
-
-fit1 <- glm(coef_corr ~ dis_3d ,data = pairwise[pairwise$coef_corr>-1,], family=gaussian())
-Pvalue=c(coef(summary(fit1))[2,4]); Pvalue
-Coef=fit1$coefficients[2]; Coef
-
-fit1 <- glm(coef_corr ~ dis_linear ,data = pairwise, family=gaussian())
-Pvalue=c(coef(summary(fit1))[2,4]); Pvalue
-Coef=fit1$coefficients[2]; Coef
-
-
-# overlap with regression result and this ---------------------------------
-table_2can <- read.delim(paste(baseD,"pan3can_shared_data/analysis_results/regression/table/kinase_substrate_regression.txt",sep = ""))
-table1 <- table_2can[table_2can$model=="pho_sub~pro_kin",]
-table1_rsd <- str_split_fixed(table1$SUB_MOD_RSD,"[STY]",3)[,2]
-cancer <- cohort
-#for (i in 1:nrow(pairwise)) {
-for (i in which(pairwise$fdr_corr<=sig)) {
-  k1 <- which(table1$SUBSTRATE==gene1_list[i] & table1_rsd==rsd1_list[i] & table1$Cancer==cancer)
-  k2 <- which(table1$SUBSTRATE==gene1_list[i] & table1_rsd==rsd2_list[i] & table1$Cancer==cancer)
-  kinase <- unique(intersect(table1$KINASE[k1],table1$KINASE[k2]))
-
-  if (length(kinase) > 0) {
-    for (j in kinase) {
-      p1 <- table1$FDR_pro_kin[table1$KINASE==j & table1$SUBSTRATE==gene1_list[i] & table1_rsd==rsd1_list[i] & table1$Cancer==cancer]
-      p2 <- table1$FDR_pro_kin[table1$KINASE==j & table1$SUBSTRATE==gene1_list[i] & table1_rsd==rsd2_list[i] & table1$Cancer==cancer]
-      
-      if ( p1 <= sig && p2 <= sig ) {
-        # print(paste(gene1_list[i],rsd1_p[i],rsd2_p[i],pairwise$fdr_corr[i],j,p1,p2,sep = ":"))
-        print(paste(gene1_list[i],rsd1_p[i],rsd2_p[i],j,sep = ":"))
-      }
-    }
-  }
-}
-
-
-
-# extract RTK results -----------------------------------------------------
-RTK_file = read.table(paste(baseD,"pan3can_shared_data/reference_files/RTKs_list.txt",sep = ""))
-rtk <- as.vector(t(RTK_file))
-rows <- c()
-for (gene in rtk) {
-  temp <- which(pairwise$Gene1==gene)
-  rows <- c(rows,temp)
-}
-p <- ggplot(data = pairwise[rows,], aes(x = dis_3d , y = coef_corr)) +
-  geom_smooth(method = "glm", se=FALSE, color="black", formula = y ~ x) +
-  geom_point()+
-  ylim(c(-1,1))
-p
-
-
-# volcano plotting module -------------------------------------------------
-remove_outliers <- function(x, na.rm = TRUE, ...) {
-  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
-  H <- out_thres * IQR(x, na.rm = na.rm)
-  y <- x
-  y[x < (qnt[1] - H)] <- NA
-  y[x > (qnt[2] + H)] <- NA
-  y
-}
-
-phosite_corr$coef_filtered = remove_outliers(phosite_corr$coef)
-phosite_corr_outlier_removed_m = phosite_corr[!is.na(phosite_corr$coef_filtered) & phosite_corr$fdr_log10 < 100 ,]
-# phosite_corr_outlier_removed_m = phosite_corr[!is.na(phosite_corr$coef_filtered),]
-plot_fdr_scale <- 50
-
-
-p = ggplot(phosite_corr_outlier_removed_m,aes(x=coef, y=-log10(fdr)))
-p = p + geom_point(alpha=0.005)
-p = p + geom_text(aes(label= ifelse(-log10(fdr)>plot_fdr_scale, pair, NA)),size=2,alpha=0.2)
-p = p + theme_bw() #+ theme_nogrid()
-p = p + theme(axis.title = element_text(size=10), axis.text.x = element_text(colour="black", size=6,angle=90, vjust=0.5), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=14))
-p = p + labs(x = "Coefficient", y="-log10(FDR)")
-p
-fn = paste(baseD,'pan3can_shared_data/analysis_results/hotspot3d/',cohort,'_substrate_phosphosite_correlation_volcano.pdf',sep ="")
-ggsave(file=fn, height=6, width=8, useDingbats=FALSE)
-dev.off()
 
 

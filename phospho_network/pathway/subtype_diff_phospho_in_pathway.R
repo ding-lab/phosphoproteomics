@@ -33,7 +33,7 @@ if (cancer == "BRCA") {
   BRCA_pho_f = paste(baseD,"pan3can_shared_data/BRCA/TCGA_Breast_BI_Phosphoproteome.phosphosite.itraq_abbrev_normlized_max10NA.tsv",sep="")
   pho_data = read.delim(BRCA_pho_f)
   ## read in grouped phosphorylation data
-  BRCA_pho_g = paste(baseD,"pan3can_shared_data/BRCA/BRCA_PHO_by_PRO_formatted_normalized_max10NA.txt",sep="")
+  BRCA_pho_g = paste(baseD,"pan3can_shared_data/BRCA/BRCA_PHO_formatted_normalized_max10NA.txt",sep="")
   pho_gdata = read.delim(BRCA_pho_g)
   clinical <- read.delim(paste(baseD,"pan3can_shared_data/BRCA/BRCA_clinical_summary.txt",sep=""))
   colx <- 78 # the column of protein name
@@ -44,7 +44,7 @@ if ( cancer == "OV" ) {
   cancer = "OV"
   OV_pho_f = paste(baseD,"pan3can_shared_data/OV/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq_abbrev_normalized_max10NA.tsv",sep="")
   pho_data = read.delim(OV_pho_f)
-  OV_pho_g = paste(baseD,"pan3can_shared_data/OV/OV_PNNL_PHO_by_PRO_formatted_normalized_max10NA.txt",sep="")
+  OV_pho_g = paste(baseD,"pan3can_shared_data/OV/OV_PNNL_PHO_formatted_normalized_max10NA.txt",sep="")
   pho_gdata = read.delim(OV_pho_g)
   OV_pro_f = paste(baseD,"pan3can_shared_data/OV/OV_PNNL_PRO_formatted_normalized_max10NA.txt",sep="")
   pro_data <- read.delim(OV_pro_f)
@@ -70,6 +70,7 @@ x <- vector(mode = "numeric", length = nrow(pho_gdata))
 pho_diff <- data.frame(matrix(rep(x,2), ncol=2, byrow=T))
 rownames(pho_diff) <- pho_gdata$X
 colnames(pho_diff) <- c("lum_mean","basal_mean")
+pho_diff$gene <- pho_gdata$X
 
 # calculate the differential phospho level between subtypes ---------------
 ## get LumA&LumB-basal for all phosphorylation level
@@ -77,16 +78,24 @@ sample_names <- colnames(pho_gdata[,-colx])
 pho_diff$lum_mean <- rowMeans(pho_gdata[,na.omit(sample_names[clinical[1,-1]=="LumA" | clinical[1,-1]=="LumB"])], na.rm = TRUE)
 pho_diff$basal_mean <- rowMeans(pho_gdata[,na.omit(sample_names[clinical[1,-1]=="Basal"])], na.rm = TRUE)
 pho_diff$lum_basal <- pho_diff$lum_mean - pho_diff$basal_mean
+tn = paste(baseD,"pan3can_shared_data/analysis_results/pathway/tables/lum_basal_phospho_diff_all.txt", sep="")
+write.table(pho_diff, file=tn, quote=F, sep = '\t', row.names = FALSE)
 
 # input pathway info ----------------------------------------------
 load("~/Box Sync/pan3can_shared_data/analysis_results/2015-08-01_Gene_Set.RData")
 
 
 # output results for certain pathways -------------------------------------
-path <- KEGG$`hsa04010	MAPK signaling pathway`
+#path <- KEGG$`hsa04010	MAPK signaling pathway`;tn = paste(baseD,"pan3can_shared_data/analysis_results/pathway/MAPK_lum_basal_phospho_diff.txt", sep="")
+
+#path <- KEGG$`hsa04110	Cell cycle`;tn = paste(baseD,"pan3can_shared_data/analysis_results/pathway/Cell_cycle_lum_basal_phospho_diff.txt", sep="")
+
+#path <- KEGG$`hsa04151	PI3K-Akt signaling pathway`;tn = paste(baseD,"pan3can_shared_data/analysis_results/pathway/PI3K-Akt_lum_basal_phospho_diff.txt", sep="")
+path <- KEGG$RB;tn = paste(baseD,"pan3can_shared_data/analysis_results/pathway/Cell_cycle_lum_basal_phospho_diff.txt", sep="")
+
 temp <- pho_diff[path,]
 temp <- temp[!is.na(temp[,1]),]
 path_pho_diff <- data.frame(temp$lum_basal)
 rownames(path_pho_diff) <- row.names(temp)
-tn = paste(baseD,"pan3can_shared_data/analysis_results/pathway/MAPK_lum_basal_phospho_diff.txt", sep="")
-write.table(path_pho_diff, file=tn, quote=F, sep = '\t', row.names = TRUE)
+path_pho_diff$gene <- row.names(temp)
+write.table(path_pho_diff, file=tn, quote=F, sep = '\t', row.names = FALSE)
