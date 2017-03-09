@@ -5,14 +5,18 @@
 # pathway_activation.R
 
 
-setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/pathway_activation")
-source("/Users/khuang/bin/LIB_exp.R")
+# setwd("/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/pathway_activation")
+baseD = "/Users/yigewu/Box\ Sync/"
+base = "/Users/yigewu/Box\ Sync/pan3can_analysis/"
+setwd(paste(base,"pathway_activation",sep=""))
+
+#source("/Users/khuang/bin/LIB_exp.R")
 #library("reactome.db")
 library(KEGGprofile)
 library(biomaRt)
 
 # Get list KEGG and REACT for analysis
-load("/Users/khuang/bin/2015-08-01_Gene_Set.RData")
+load(paste(baseD,"pan3can_shared_data/analysis_results/2015-08-01_Gene_Set.RData",sep = ""))
 
 KEGG_signaling = KEGG[c(grep("signaling", names(KEGG)),which(names(KEGG)=="hsa04110\tCell cycle"))]
 # 
