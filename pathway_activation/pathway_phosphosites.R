@@ -49,65 +49,27 @@ BRCA_Pho = read.table(row.names = 1, header=TRUE, sep="\t", file="/Users/khuang/
 BRCA_Pho = as.matrix(BRCA_Pho)
 BRCA_Pho_score = score_calc_by_gene(BRCA_Pho)
 
+trans_result_f = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/manuscript/supplementary_tables/kinase_substrate_regression_trans_edited.txt"
+trans_result = read.table( header=TRUE, sep="\t", file = trans_result_f)
+trans_result_sig = trans_result[(trans_result$self & trans_result$FDR_pro_kin < 0.05) | (!trans_result$self & trans_result$FDR_pho_kin < 0.05),]
+sig_genes = unique(as.character(unique(trans_result_sig$KINASE,trans_result_sig$SUBSTRATE)))
+BRCA_Pho_score = BRCA_Pho_score[row.names(BRCA_Pho_score) %in% sig_genes,]
+
 BRCA_fn = paste(source_date,"BRCA_cross_pathway_activation.tsv",sep="_")
 BRCA_Pho_pathway_all_merge = read.table(header = T, quote="", sep = '\t', file=BRCA_fn)
 
-##### plotting #####
+path_phosite = read.table( header=TRUE, sep="\t", file = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/manuscript/supplementary_tables/pathway_phos_&_phosphosite_corr_adjust_pvalue_within_pathways_BRCA.txt")
 
-plots = list()
-brcaGenes = c("EGFR","TP53", "ERBB2", "PIK3CA","PIK3CB", "MTOR","CDK1", "CDK2", "MAP3K1","MAPK3","MAPK9","MAPK1","MAP3K3","AKT1","AKT2")
-BRCA_Pho_score_g = BRCA_Pho_score[row.names(BRCA_Pho_score) %in% brcaGenes,]
-BRCA_Pho_score_g_m = melt(BRCA_Pho_score_g)
-colnames(BRCA_Pho_score_g_m) = c("Gene","Sample","Phosphorylation_score")
+# merge and compare
+trans_result$site =paste(trans_result$SUBSTRATE,trans_result$SUB_MOD_RSD,sep=":")
+path_phosite$site = paste(path_phosite$protein,path_phosite$rsd,sep=":")
+reg_path_merge = merge(trans_result,path_phosite,by="site")
+#reg_path_merge_sig = reg_path_merge[reg_path_merge$fdr<0.1,]
+reg_path_merge_sig = reg_path_merge[(!is.na(reg_path_merge$FDR_pho_kin) & reg_path_merge$FDR_pho_kin < 0.05) | 
+                                      (!is.na(reg_path_merge$FDR_pro_kin) & reg_path_merge$FDR_pro_kin < 0.05),]
 
-BRCA_Pho_score_g_m$Phosphorylation_score_plot = BRCA_Pho_score_g_m$Phosphorylation_score
-BRCA_Pho_score_g_m$Phosphorylation_score_plot[BRCA_Pho_score_g_m$Phosphorylation_score_plot > 2]=2
-BRCA_Pho_score_g_m$Phosphorylation_score_plot[BRCA_Pho_score_g_m$Phosphorylation_score_plot < -2]=-2
+write.table(reg_path_merge_sig, col.names=NA, quote=F, sep = '\t', file="pathway_sites_reg.tsv")
 
-p = ggplot(data=BRCA_Pho_score_g_m)
-p = p + geom_tile(aes(x=Sample, y=Gene, fill=as.numeric(Phosphorylation_score_plot), color = ifelse(as.numeric(Phosphorylation_score) > 1, "black",NA))) 
-p = p + scale_fill_gradientn(name= "Phosphorylation score", na.value=NA, colours=RdBu1024, limit=c(-2,2))
-p = p + scale_colour_manual(values=c("black",NA))
-p = p + theme_bw() #+ theme_nogrid()
-p = p + theme(text = element_text(size = 10),
-              axis.title.x = element_blank(),
-              axis.ticks = element_blank(),
-              axis.text.x = element_blank(),
-              strip.text = element_text(size = 8),
-              # panel.background = element_blank(),
-              # panel.grid.major.x = element_blank(),
-              # panel.grid.minor = element_blank(),
-              legend.position="right")
-plots[[1]] = p
-
-# select specific pathways for plotting
-sele_paths = c("MAPK signaling pathway","ErbB signaling pathway","Ras signaling pathway","p53 signaling pathway","PI3K-Akt signaling pathway"
-               ,"mTOR signaling pathway","Cell cycle")
-BRCA_Pho_pathway_all_merge_p = BRCA_Pho_pathway_all_merge#[BRCA_Pho_pathway_all_merge$Pathway %in% sele_paths,]
-
-p = ggplot(data=BRCA_Pho_pathway_all_merge_p)
-p = p + geom_point(aes(x=Sample, y=Pathway, fill=as.numeric(Global_phosphorylation), size=-log10(FDR), color=ifelse(Sig, "black",NA)),pch=21) 
-p = p + scale_fill_gradientn(name= "Global Phosphorylation", na.value=NA, colours=RdBu1024, limit=c(-1.5,1.5))
-p = p + scale_colour_manual(values=c("black",NA))
-p = p + theme_bw() #+ theme_nogrid()
-p = p + theme(text = element_text(size = 10),
-              axis.title.x = element_blank(),
-              axis.ticks = element_blank(),
-              axis.text.x = element_blank(),
-              strip.text = element_text(size = 8),
-              # panel.background = element_blank(),
-              # #panel.grid.major.x = element_blank(),
-              # panel.grid.minor = element_blank(),
-              legend.position="right")
-plots[[2]] = p
-
-gp = do.call(rbind_gtable, plots)
-# print the integrated plot
-grid.newpage()
-fn = paste(pd, 'BRCA_merged_pho_pathway.pdf',sep ="_")
-pdf(fn, height=3, width=15,useDingbats = F)
-grid.draw(gp)
-dev.off()
 
 ### OV PNNL ###
 OV_PNNL_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/OV/OV_PNNL_PHO_formatted_normalized.txt")
@@ -209,7 +171,6 @@ plot_2gene_vs_pathway = function(gene1, gene2, pathway){
   fn = paste(pd,gene1,gene2,pathway,'pho_pathway.pdf',sep ="_")
   ggsave(fn, w=4,h=4,useDingbats = F)
 }
-plot_2gene_vs_pathway("ERBB2","ABL1","ErbB signaling pathway")
 plot_2gene_vs_pathway("ERBB2","EGFR","ErbB signaling pathway")
 plot_2gene_vs_pathway("PIK3CA","PTEN","PI3K-Akt signaling pathway")
 plot_2gene_vs_pathway("MAPK1","MAPK3","MAPK signaling pathway")

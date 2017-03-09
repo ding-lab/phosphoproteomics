@@ -8,7 +8,6 @@ baseD = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
 setwd(paste(base,"pathway_activation",sep=""))
 source("/Users/khuang/bin/LIB_exp.R")
 source(paste(base,"pathway_activation/pathway_activation.R",sep=""))
-source_date = "2015-10-09/2015-10-09"
 
 
 # function to format CDAP proteome data processed by Kuan
@@ -45,11 +44,29 @@ score_calc_by_gene = function(m){
 }
 
 ##### Phospho data #####
+
 ### BRCA ###
 BRCA_Pho = read.table(row.names = 1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/BRCA/BRCA_PHO_formatted_normalized.txt")
 #BRCA_Pho.n = format_pro(BRCA_Pho)
 BRCA_Pho = as.matrix(BRCA_Pho)
 BRCA_Pho_score = score_calc_by_gene(BRCA_Pho)
+
+# BRCA_RNA = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/BRCA/BRCA_mRNA_formatted.txt",sep="")) # use not normalized, doesn't matter for Spearman
+# BRCA_expressed_genes = row.names(BRCA_RNA)[rowSums(BRCA_RNA,na.rm=T) > 74*500]
+# BRCA_Pho_score_g = BRCA_Pho_score[row.names(BRCA_Pho_score) %in% BRCA_expressed_genes,]
+
+trans_result_f = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/manuscript/supplementary_tables/kinase_substrate_regression_trans_edited.txt"
+trans_result = read.table( header=TRUE, sep="\t", file = trans_result_f)
+trans_result_sig = trans_result[(trans_result$self & trans_result$FDR_pro_kin < 0.05) | (!trans_result$self & trans_result$FDR_pho_kin < 0.05),]
+sig_genes = unique(as.character(unique(trans_result_sig$KINASE,trans_result_sig$SUBSTRATE)))
+
+#BRCA_Pho_score_g = BRCA_Pho_score[row.names(BRCA_Pho_score) %in% sig_genes,]
+# change what's in the pathway so all genes go into the background
+for (pathway in names(KEGG_signaling)){
+  hsa = strsplit(pathway, split = "\t")[[1]][1]
+  pathway_name=strsplit(pathway, split = "\t")[[1]][2]
+  KEGG[[pathway]] = KEGG[[pathway]][KEGG[[pathway]] %in% sig_genes]
+}
 
 BRCA_Pho_pathway = KEGGpathway_activation(BRCA_Pho_score)
 
@@ -112,69 +129,76 @@ write.table(BRCA_Pho_pathway_all_merge, row.names = F, quote=F, sep = '\t', file
 #               panel.grid.major.x = element_blank(),
 #               panel.grid.minor = element_blank(),
 #               legend.position="right")
-plots = list()
-brcaGenes = c("TP53", "ERBB2", "PIK3CA","PIK3CB", "MTOR","CDK1", "CDK2", "MAP3K1","MAPK3","MAPK9","MAPK1")
-BRCA_Pho_score_g = BRCA_Pho_score[row.names(BRCA_Pho_score) %in% brcaGenes,]
-BRCA_Pho_score_g_m = melt(BRCA_Pho_score_g)
-colnames(BRCA_Pho_score_g_m) = c("Gene","Sample","Phosphorylation_score")
+# plots = list()
+# brcaGenes = c("TP53", "ERBB2", "PIK3CA","PIK3CB", "MTOR","CDK1", "CDK2", "MAP3K1","MAPK3","MAPK9","MAPK1")
+# BRCA_Pho_score_g = BRCA_Pho_score[row.names(BRCA_Pho_score) %in% brcaGenes,]
+# BRCA_Pho_score_g_m = melt(BRCA_Pho_score_g)
+# colnames(BRCA_Pho_score_g_m) = c("Gene","Sample","Phosphorylation_score")
+# 
+# BRCA_Pho_score_g_m$Phosphorylation_score_plot = BRCA_Pho_score_g_m$Phosphorylation_score
+# BRCA_Pho_score_g_m$Phosphorylation_score_plot[BRCA_Pho_score_g_m$Phosphorylation_score_plot > 2]=2
+# BRCA_Pho_score_g_m$Phosphorylation_score_plot[BRCA_Pho_score_g_m$Phosphorylation_score_plot < -2]=-2
 
-BRCA_Pho_score_g_m$Phosphorylation_score_plot = BRCA_Pho_score_g_m$Phosphorylation_score
-BRCA_Pho_score_g_m$Phosphorylation_score_plot[BRCA_Pho_score_g_m$Phosphorylation_score_plot > 2]=2
-BRCA_Pho_score_g_m$Phosphorylation_score_plot[BRCA_Pho_score_g_m$Phosphorylation_score_plot < -2]=-2
-
-p = ggplot(data=BRCA_Pho_score_g_m)
-p = p + geom_tile(aes(x=Sample, y=Gene, fill=as.numeric(Phosphorylation_score_plot), color = ifelse(as.numeric(Phosphorylation_score) > 1, "black",NA))) 
-p = p + scale_fill_gradientn(name= "Phosphorylation score", na.value=NA, colours=RdBu1024, limit=c(-2,2))
-p = p + scale_colour_manual(values=c("black",NA))
-p = p + theme_bw() + theme_nogrid()
-p = p + theme(text = element_text(size = 10),
-              axis.title.x = element_blank(),
-              axis.ticks = element_blank(),
-              axis.text.x = element_blank(),
-              strip.text = element_text(size = 8),
-              panel.background = element_blank(),
-              panel.grid.major.x = element_blank(),
-              panel.grid.minor = element_blank(),
-              legend.position="right")
-plots[[1]] = p
-
-# select specific pathways for plotting
-sele_paths = c("MAPK signaling pathway","ErbB signaling pathway","Ras signaling pathway","p53 signaling pathway","PI3K-Akt signaling pathway"
-               ,"mTOR signaling pathway","Cell cycle")
-BRCA_Pho_pathway_all_merge_p = BRCA_Pho_pathway_all_merge[BRCA_Pho_pathway_all_merge$Pathway %in% sele_paths,]
-
-p = ggplot(data=BRCA_Pho_pathway_all_merge_p)
-p = p + geom_point(aes(x=Sample, y=Pathway, fill=as.numeric(Global_phosphorylation), size=-log10(FDR), color=ifelse(Sig, "black",NA)),pch=21) 
-p = p + scale_fill_gradientn(name= "Global Phosphorylation", na.value=NA, colours=RdBu1024, limit=c(-1.5,1.5))
-p = p + scale_colour_manual(values=c("black",NA))
-p = p + theme_bw() + theme_nogrid()
-p = p + theme(text = element_text(size = 10),
-              axis.title.x = element_blank(),
-              axis.ticks = element_blank(),
-              axis.text.x = element_blank(),
-              strip.text = element_text(size = 8),
-              panel.background = element_blank(),
-              panel.grid.major.x = element_blank(),
-              panel.grid.minor = element_blank(),
-              legend.position="right")
-plots[[2]] = p
-
-
-
-gp = do.call(rbind_gtable, plots)
-# print the integrated plot
-grid.newpage()
-fn = paste(pd, 'merged_pho_pathway.pdf',sep ="_")
-pdf(fn, height=3, width=15,useDingbats = F)
-grid.draw(gp)
-dev.off()
+# p = ggplot(data=BRCA_Pho_score_g_m)
+# p = p + geom_tile(aes(x=Sample, y=Gene, fill=as.numeric(Phosphorylation_score_plot), color = ifelse(as.numeric(Phosphorylation_score) > 1, "black",NA))) 
+# p = p + scale_fill_gradientn(name= "Phosphorylation score", na.value=NA, colours=RdBu1024, limit=c(-2,2))
+# p = p + scale_colour_manual(values=c("black",NA))
+# p = p + theme_bw() + theme_nogrid()
+# p = p + theme(text = element_text(size = 10),
+#               axis.title.x = element_blank(),
+#               axis.ticks = element_blank(),
+#               axis.text.x = element_blank(),
+#               strip.text = element_text(size = 8),
+#               panel.background = element_blank(),
+#               panel.grid.major.x = element_blank(),
+#               panel.grid.minor = element_blank(),
+#               legend.position="right")
+# plots[[1]] = p
+# 
+# # select specific pathways for plotting
+# sele_paths = c("MAPK signaling pathway","ErbB signaling pathway","Ras signaling pathway","p53 signaling pathway","PI3K-Akt signaling pathway"
+#                ,"mTOR signaling pathway","Cell cycle")
+# BRCA_Pho_pathway_all_merge_p = BRCA_Pho_pathway_all_merge[BRCA_Pho_pathway_all_merge$Pathway %in% sele_paths,]
+# 
+# p = ggplot(data=BRCA_Pho_pathway_all_merge_p)
+# p = p + geom_point(aes(x=Sample, y=Pathway, fill=as.numeric(Global_phosphorylation), size=-log10(FDR), color=ifelse(Sig, "black",NA)),pch=21) 
+# p = p + scale_fill_gradientn(name= "Global Phosphorylation", na.value=NA, colours=RdBu1024, limit=c(-1.5,1.5))
+# p = p + scale_colour_manual(values=c("black",NA))
+# p = p + theme_bw() + theme_nogrid()
+# p = p + theme(text = element_text(size = 10),
+#               axis.title.x = element_blank(),
+#               axis.ticks = element_blank(),
+#               axis.text.x = element_blank(),
+#               strip.text = element_text(size = 8),
+#               panel.background = element_blank(),
+#               panel.grid.major.x = element_blank(),
+#               panel.grid.minor = element_blank(),
+#               legend.position="right")
+# plots[[2]] = p
+# 
+# 
+# 
+# gp = do.call(rbind_gtable, plots)
+# # print the integrated plot
+# grid.newpage()
+# fn = paste(pd, 'merged_pho_pathway.pdf',sep ="_")
+# pdf(fn, height=3, width=15,useDingbats = F)
+# grid.draw(gp)
+# dev.off()
 
 ### OV PNNL ###
 OV_PNNL_Pho = read.table(row.names=1, header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/OV/OV_PNNL_PHO_formatted_normalized.txt")
 OV_Pho = as.matrix(OV_PNNL_Pho)
 OV_Pho_score = score_calc_by_gene(OV_Pho)
 
-OV_Pho_pathway = KEGGpathway_activation(OV_Pho_score)
+# OV_all_RNA = read.table(row.names=1, header=TRUE, sep="\t", file=paste(baseD,"pan3can_shared_data/OV/OV_mRNA_formatted.txt",sep="")) # use not normalized, doesn't matter for Spearman
+# OV_RNA = OV_all_RNA[,colnames(OV_all_RNA) %in% colnames(OV_Pho)]
+# OV_expressed_genes = row.names(OV_RNA)[rowSums(OV_RNA,na.rm=T) > 40*500]
+# 
+# OV_Pho_score_g = OV_Pho_score[row.names(OV_Pho_score) %in% OV_expressed_genes,]
+
+OV_Pho_score_g = OV_Pho_score[row.names(OV_Pho_score) %in% sig_genes,]
+OV_Pho_pathway = KEGGpathway_activation(OV_Pho_score_g)
 
 # a brief visualization; need to use ggplot2 and facet in the future
 OV_Pho_pathway_all_setM = matrix(as.numeric(as.character(unlist(OV_Pho_pathway$all_setM))), nrow=45, byrow=T)
@@ -235,255 +259,255 @@ write.table(OV_Pho_pathway_all_merge, row.names = F, quote=F, sep = '\t', file=O
 #               panel.grid.major.x = element_blank(),
 #               panel.grid.minor = element_blank(),
 #               legend.position="right")
-plots = list()
-OVGenes = c("TP53", "ERBB2", "MTOR","CDK1", "CDK2", "MAP3K1","RB1","PTEN")
-OV_Pho_score_g = OV_Pho_score[row.names(OV_Pho_score) %in% OVGenes,]
-OV_Pho_score_g_m = melt(OV_Pho_score_g)
-colnames(OV_Pho_score_g_m) = c("Gene","Sample","Phosphorylation_score")
-
-OV_Pho_score_g_m$Phosphorylation_score_plot = OV_Pho_score_g_m$Phosphorylation_score
-OV_Pho_score_g_m$Phosphorylation_score_plot[OV_Pho_score_g_m$Phosphorylation_score_plot > 2]=2
-OV_Pho_score_g_m$Phosphorylation_score_plot[OV_Pho_score_g_m$Phosphorylation_score_plot < -2]=-2
-
-p = ggplot(data=OV_Pho_score_g_m)
-p = p + geom_tile(aes(x=Sample, y=Gene, fill=as.numeric(Phosphorylation_score_plot), color = ifelse(as.numeric(Phosphorylation_score) > 1, "black",NA))) 
-p = p + scale_fill_gradientn(name= "Phosphorylation score", na.value=NA, colours=RdBu1024, limit=c(-2,2))
-p = p + scale_colour_manual(values=c("black",NA))
-p = p + theme_bw() + theme_nogrid()
-p = p + theme(text = element_text(size = 10),
-              axis.title.x = element_blank(),
-              axis.ticks = element_blank(),
-              axis.text.x = element_blank(),
-              strip.text = element_text(size = 8),
-              panel.background = element_blank(),
-              panel.grid.major.x = element_blank(),
-              panel.grid.minor = element_blank(),
-              legend.position="right")
-plots[[1]] = p
-
-# select specific pathways for plotting
-sele_paths = c("MAPK signaling pathway","ErbB signaling pathway","Ras signaling pathway","p53 signaling pathway","PI3K-Akt signaling pathway"
-               ,"mTOR signaling pathway","Cell cycle")
-OV_Pho_pathway_all_merge_p = OV_Pho_pathway_all_merge[OV_Pho_pathway_all_merge$Pathway %in% sele_paths,]
-
-p = ggplot(data=OV_Pho_pathway_all_merge_p)
-p = p + geom_point(aes(x=Sample, y=Pathway, fill=as.numeric(Global_phosphorylation), size=-log10(FDR), color=ifelse(Sig, "black",NA)),pch=21) 
-p = p + scale_fill_gradientn(name= "Global Phosphorylation", na.value=NA, colours=RdBu1024, limit=c(-1.5,1.5))
-p = p + scale_colour_manual(values=c("black",NA))
-p = p + theme_bw() + theme_nogrid()
-p = p + theme(text = element_text(size = 10),
-              axis.title.x = element_blank(),
-              axis.ticks = element_blank(),
-              axis.text.x = element_blank(),
-              strip.text = element_text(size = 8),
-              panel.background = element_blank(),
-              panel.grid.major.x = element_blank(),
-              panel.grid.minor = element_blank(),
-              legend.position="right")
-plots[[2]] = p
-
-
-
-gp = do.call(rbind_gtable, plots)
-# print the integrated plot
-grid.newpage()
-fn = paste(pd, 'merged_pho_pathway.pdf',sep ="_")
-pdf(fn, height=3, width=15,useDingbats = F)
-grid.draw(gp)
-dev.off()
-
-
-
-
-# # a brief visualization; need to use ggplot2 and facet in the future
-# OV_PNNL_Pho_pathway_all_setM = matrix(as.numeric(as.character(unlist(OV_PNNL_Pho_pathway$all_setM))), nrow=44, byrow=T)
-# row.names(OV_PNNL_Pho_pathway_all_setM) = row.names(OV_PNNL_Pho_pathway$all_setM)
-# colnames(OV_PNNL_Pho_pathway_all_setM) = colnames(OV_PNNL_Pho_pathway$all_setM)
+# plots = list()
+# OVGenes = c("TP53", "ERBB2", "MTOR","CDK1", "CDK2", "MAP3K1","RB1","PTEN")
+# OV_Pho_score_g = OV_Pho_score[row.names(OV_Pho_score) %in% OVGenes,]
+# OV_Pho_score_g_m = melt(OV_Pho_score_g)
+# colnames(OV_Pho_score_g_m) = c("Gene","Sample","Phosphorylation_score")
 # 
-# pdf(paste(pd,'OV_PNNL_Pho_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
-# par(oma=c(1,3,1,20))
+# OV_Pho_score_g_m$Phosphorylation_score_plot = OV_Pho_score_g_m$Phosphorylation_score
+# OV_Pho_score_g_m$Phosphorylation_score_plot[OV_Pho_score_g_m$Phosphorylation_score_plot > 2]=2
+# OV_Pho_score_g_m$Phosphorylation_score_plot[OV_Pho_score_g_m$Phosphorylation_score_plot < -2]=-2
 # 
-# OV_PNNL_Pho_pathway = heatmap.2(OV_PNNL_Pho_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
-#                              cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
-#                              col=getPalette, margins=c(5,5)) #
-# dev.off()
-
-# ##### PROTEOME DATA #####
-# # read z-score table directly
-# #fn = paste(base, "druggable_outlier/figures/",source_date,"_KH_BRCA\ druggable\ proteome_outlier_score_table.txt", sep="")
-# #PRO = read.table(row.names=1,header=TRUE, sep="\t",file=fn)
-# BRCA_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/BRCA/TCGA_Breast_BI_Proteome_CDAP.r2/TCGA_Breast_BI_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
-# BRCA_Pro.n = format_pro(BRCA_Pro)
-# BRCA_Pro_pathway = KEGGpathway_activation(BRCA_Pro.n)
-# # how many are significant; need to coordinate with up or down...
-# # BRCA_Pro_pathway_all_fdr = data.frame(matrix(unlist(BRCA_Pro_pathway$all_fdr), nrow=44, byrow=T),stringsAsFactors=FALSE)
-# # row.names(BRCA_Pro_pathway_all_fdr) = row.names(BRCA_Pro_pathway$all_fdr)
-# # colnames(BRCA_Pro_pathway_all_fdr) = colnames(BRCA_Pro_pathway$all_fdr)
-# # for (i in 1:nrow(BRCA_Pro_pathway_all_fdr)){
-# #   cat(row.names(BRCA_Pro_pathway_all_fdr)[i], ": ", sum(BRCA_Pro_pathway_all_fdr[i,] <=0.05, na.rm=T), "\n")
-# # }
+# p = ggplot(data=OV_Pho_score_g_m)
+# p = p + geom_tile(aes(x=Sample, y=Gene, fill=as.numeric(Phosphorylation_score_plot), color = ifelse(as.numeric(Phosphorylation_score) > 1, "black",NA))) 
+# p = p + scale_fill_gradientn(name= "Phosphorylation score", na.value=NA, colours=RdBu1024, limit=c(-2,2))
+# p = p + scale_colour_manual(values=c("black",NA))
+# p = p + theme_bw() + theme_nogrid()
+# p = p + theme(text = element_text(size = 10),
+#               axis.title.x = element_blank(),
+#               axis.ticks = element_blank(),
+#               axis.text.x = element_blank(),
+#               strip.text = element_text(size = 8),
+#               panel.background = element_blank(),
+#               panel.grid.major.x = element_blank(),
+#               panel.grid.minor = element_blank(),
+#               legend.position="right")
+# plots[[1]] = p
 # 
-# # a brief visualization; need to use ggplot2 and facet in the future
-# BRCA_Pro_pathway_all_setM = matrix(as.numeric(as.character(unlist(BRCA_Pro_pathway$all_setM))), nrow=44, byrow=T)
-# row.names(BRCA_Pro_pathway_all_setM) = row.names(BRCA_Pro_pathway$all_setM)
-# colnames(BRCA_Pro_pathway_all_setM) = colnames(BRCA_Pro_pathway$all_setM)
+# # select specific pathways for plotting
+# sele_paths = c("MAPK signaling pathway","ErbB signaling pathway","Ras signaling pathway","p53 signaling pathway","PI3K-Akt signaling pathway"
+#                ,"mTOR signaling pathway","Cell cycle")
+# OV_Pho_pathway_all_merge_p = OV_Pho_pathway_all_merge[OV_Pho_pathway_all_merge$Pathway %in% sele_paths,]
 # 
-# pdf(paste(pd,'BRCA_Pro_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
-# par(oma=c(1,3,1,20))
+# p = ggplot(data=OV_Pho_pathway_all_merge_p)
+# p = p + geom_point(aes(x=Sample, y=Pathway, fill=as.numeric(Global_phosphorylation), size=-log10(FDR), color=ifelse(Sig, "black",NA)),pch=21) 
+# p = p + scale_fill_gradientn(name= "Global Phosphorylation", na.value=NA, colours=RdBu1024, limit=c(-1.5,1.5))
+# p = p + scale_colour_manual(values=c("black",NA))
+# p = p + theme_bw() + theme_nogrid()
+# p = p + theme(text = element_text(size = 10),
+#               axis.title.x = element_blank(),
+#               axis.ticks = element_blank(),
+#               axis.text.x = element_blank(),
+#               strip.text = element_text(size = 8),
+#               panel.background = element_blank(),
+#               panel.grid.major.x = element_blank(),
+#               panel.grid.minor = element_blank(),
+#               legend.position="right")
+# plots[[2]] = p
 # 
-# BRCA_Pro_pathway = heatmap.2(BRCA_Pro_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
-#                           cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
-#                           col=getPalette, margins=c(5,5)) #
+# 
+# 
+# gp = do.call(rbind_gtable, plots)
+# # print the integrated plot
+# grid.newpage()
+# fn = paste(pd, 'merged_pho_pathway.pdf',sep ="_")
+# pdf(fn, height=3, width=15,useDingbats = F)
+# grid.draw(gp)
 # dev.off()
 # 
-# ### OV_PNNL ###
-# OV_PNNL_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/PNNL_Proteome_CDAP.r2/TCGA_Ovarian_PNNL_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
-# OV_PNNL_Pro.n = format_pro(OV_PNNL_Pro)
-# OV_PNNL_Pro_pathway = KEGGpathway_activation(OV_PNNL_Pro.n)
-# # how many are significant; need to coordinate with up or down...
-# OV_PNNL_Pro_pathway_all_fdr = data.frame(matrix(unlist(OV_PNNL_Pro_pathway$all_fdr), nrow=44, byrow=T),stringsAsFactors=FALSE)
-# row.names(OV_PNNL_Pro_pathway_all_fdr) = row.names(OV_PNNL_Pro_pathway$all_fdr)
-# colnames(OV_PNNL_Pro_pathway_all_fdr) = colnames(OV_PNNL_Pro_pathway$all_fdr)
-# for (i in 1:nrow(OV_PNNL_Pro_pathway_all_fdr)){
-#   cat(row.names(OV_PNNL_Pro_pathway_all_fdr)[i], ": ", sum(OV_PNNL_Pro_pathway_all_fdr[i,] <=0.05, na.rm=T), "\n")
-# }
 # 
-# # a brief visualization; need to use ggplot2 and facet in the future
-# OV_PNNL_Pro_pathway_all_setM = matrix(as.numeric(as.character(unlist(OV_PNNL_Pro_pathway$all_setM))), nrow=44, byrow=T)
-# row.names(OV_PNNL_Pro_pathway_all_setM) = row.names(OV_PNNL_Pro_pathway$all_setM)
-# colnames(OV_PNNL_Pro_pathway_all_setM) = colnames(OV_PNNL_Pro_pathway$all_setM)
 # 
-# pdf(paste(pd,'OV_PNNL_Pro_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
-# par(oma=c(1,3,1,20))
 # 
-# OV_PNNL_Pro_pathway = heatmap.2(OV_PNNL_Pro_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
-#                              cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
-#                              col=getPalette, margins=c(5,5)) #
-# dev.off()
+# # # a brief visualization; need to use ggplot2 and facet in the future
+# # OV_PNNL_Pho_pathway_all_setM = matrix(as.numeric(as.character(unlist(OV_PNNL_Pho_pathway$all_setM))), nrow=44, byrow=T)
+# # row.names(OV_PNNL_Pho_pathway_all_setM) = row.names(OV_PNNL_Pho_pathway$all_setM)
+# # colnames(OV_PNNL_Pho_pathway_all_setM) = colnames(OV_PNNL_Pho_pathway$all_setM)
+# # 
+# # pdf(paste(pd,'OV_PNNL_Pho_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
+# # par(oma=c(1,3,1,20))
+# # 
+# # OV_PNNL_Pho_pathway = heatmap.2(OV_PNNL_Pho_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
+# #                              cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
+# #                              col=getPalette, margins=c(5,5)) #
+# # dev.off()
 # 
-# # ### OV_JHU ###
-# # OV_JHU_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/JHU_Proteome_CDAP.r2/TCGA_Ovarian_JHU_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
-# # OV_JHU_Pro.n = format_pro(OV_JHU_Pro)
-# # OV_JHU_Pro_pathway = KEGGpathway_activation(OV_JHU_Pro.n)
+# # ##### PROTEOME DATA #####
+# # # read z-score table directly
+# # #fn = paste(base, "druggable_outlier/figures/",source_date,"_KH_BRCA\ druggable\ proteome_outlier_score_table.txt", sep="")
+# # #PRO = read.table(row.names=1,header=TRUE, sep="\t",file=fn)
+# # BRCA_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/BRCA/TCGA_Breast_BI_Proteome_CDAP.r2/TCGA_Breast_BI_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
+# # BRCA_Pro.n = format_pro(BRCA_Pro)
+# # BRCA_Pro_pathway = KEGGpathway_activation(BRCA_Pro.n)
 # # # how many are significant; need to coordinate with up or down...
-# # OV_JHU_Pro_pathway_all_fdr = data.frame(matrix(unlist(OV_JHU_Pro_pathway$all_fdr), nrow=44, byrow=T),stringsAsFactors=FALSE)
-# # row.names(OV_JHU_Pro_pathway_all_fdr) = row.names(OV_JHU_Pro_pathway$all_fdr)
-# # colnames(OV_JHU_Pro_pathway_all_fdr) = colnames(OV_JHU_Pro_pathway$all_fdr)
-# # for (i in 1:nrow(OV_JHU_Pro_pathway_all_fdr)){
-# #   cat(row.names(OV_JHU_Pro_pathway_all_fdr)[i], ": ", sum(OV_JHU_Pro_pathway_all_fdr[i,] <=0.05, na.rm=T), "\n")
+# # # BRCA_Pro_pathway_all_fdr = data.frame(matrix(unlist(BRCA_Pro_pathway$all_fdr), nrow=44, byrow=T),stringsAsFactors=FALSE)
+# # # row.names(BRCA_Pro_pathway_all_fdr) = row.names(BRCA_Pro_pathway$all_fdr)
+# # # colnames(BRCA_Pro_pathway_all_fdr) = colnames(BRCA_Pro_pathway$all_fdr)
+# # # for (i in 1:nrow(BRCA_Pro_pathway_all_fdr)){
+# # #   cat(row.names(BRCA_Pro_pathway_all_fdr)[i], ": ", sum(BRCA_Pro_pathway_all_fdr[i,] <=0.05, na.rm=T), "\n")
+# # # }
+# # 
+# # # a brief visualization; need to use ggplot2 and facet in the future
+# # BRCA_Pro_pathway_all_setM = matrix(as.numeric(as.character(unlist(BRCA_Pro_pathway$all_setM))), nrow=44, byrow=T)
+# # row.names(BRCA_Pro_pathway_all_setM) = row.names(BRCA_Pro_pathway$all_setM)
+# # colnames(BRCA_Pro_pathway_all_setM) = colnames(BRCA_Pro_pathway$all_setM)
+# # 
+# # pdf(paste(pd,'BRCA_Pro_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
+# # par(oma=c(1,3,1,20))
+# # 
+# # BRCA_Pro_pathway = heatmap.2(BRCA_Pro_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
+# #                           cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
+# #                           col=getPalette, margins=c(5,5)) #
+# # dev.off()
+# # 
+# # ### OV_PNNL ###
+# # OV_PNNL_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/PNNL_Proteome_CDAP.r2/TCGA_Ovarian_PNNL_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
+# # OV_PNNL_Pro.n = format_pro(OV_PNNL_Pro)
+# # OV_PNNL_Pro_pathway = KEGGpathway_activation(OV_PNNL_Pro.n)
+# # # how many are significant; need to coordinate with up or down...
+# # OV_PNNL_Pro_pathway_all_fdr = data.frame(matrix(unlist(OV_PNNL_Pro_pathway$all_fdr), nrow=44, byrow=T),stringsAsFactors=FALSE)
+# # row.names(OV_PNNL_Pro_pathway_all_fdr) = row.names(OV_PNNL_Pro_pathway$all_fdr)
+# # colnames(OV_PNNL_Pro_pathway_all_fdr) = colnames(OV_PNNL_Pro_pathway$all_fdr)
+# # for (i in 1:nrow(OV_PNNL_Pro_pathway_all_fdr)){
+# #   cat(row.names(OV_PNNL_Pro_pathway_all_fdr)[i], ": ", sum(OV_PNNL_Pro_pathway_all_fdr[i,] <=0.05, na.rm=T), "\n")
 # # }
 # # 
 # # # a brief visualization; need to use ggplot2 and facet in the future
-# # OV_JHU_Pro_pathway_all_setM = matrix(as.numeric(as.character(unlist(OV_JHU_Pro_pathway$all_setM))), nrow=44, byrow=T)
-# # row.names(OV_JHU_Pro_pathway_all_setM) = row.names(OV_JHU_Pro_pathway$all_setM)
-# # colnames(OV_JHU_Pro_pathway_all_setM) = colnames(OV_JHU_Pro_pathway$all_setM)
+# # OV_PNNL_Pro_pathway_all_setM = matrix(as.numeric(as.character(unlist(OV_PNNL_Pro_pathway$all_setM))), nrow=44, byrow=T)
+# # row.names(OV_PNNL_Pro_pathway_all_setM) = row.names(OV_PNNL_Pro_pathway$all_setM)
+# # colnames(OV_PNNL_Pro_pathway_all_setM) = colnames(OV_PNNL_Pro_pathway$all_setM)
 # # 
-# # pdf(paste(pd,'OV_JHU_Pro_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
+# # pdf(paste(pd,'OV_PNNL_Pro_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
 # # par(oma=c(1,3,1,20))
 # # 
-# # OV_JHU_Pro_pathway = heatmap.2(OV_JHU_Pro_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
-# #                                 cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
-# #                                 col=getPalette, margins=c(5,5)) #
+# # OV_PNNL_Pro_pathway = heatmap.2(OV_PNNL_Pro_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
+# #                              cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
+# #                              col=getPalette, margins=c(5,5)) #
 # # dev.off()
 # # 
-# # ##### doesn't work yet, rough #####
-# # ### CRC ###
-# # CRC_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/CRC/VU_Proteome_CDAP.r2/TCGA_Colon_VU_Proteome_CDAP.r2.spectral_counts.tsv_hugoified.unshared_spectal_counts.txt")
-# # CRC_Pro.n = format_crc(CRC_Pro)
-# # CRC_Pro_pathway = KEGGpathway_activation(CRC_Pro.n)
-# # # how many are significant; need to coordinate with up or down...
-# # CRC_Pro_pathway_all_fdr = data.frame(matrix(unlist(CRC_Pro_pathway$all_fdr), nrow=44, byrow=T),stringsAsFactors=FALSE)
-# # row.names(CRC_Pro_pathway_all_fdr) = row.names(CRC_Pro_pathway$all_fdr)
-# # colnames(CRC_Pro_pathway_all_fdr) = colnames(CRC_Pro_pathway$all_fdr)
-# # for (i in 1:nrow(CRC_Pro_pathway_all_fdr)){
-# #   cat(row.names(CRC_Pro_pathway_all_fdr)[i], ": ", sum(CRC_Pro_pathway_all_fdr[i,] <=0.05, na.rm=T), "\n")
-# # }
-# # 
-# # # a brief visualization; need to use ggplot2 and facet in the future
-# # CRC_Pro_pathway_all_setM = matrix(as.numeric(as.character(unlist(CRC_Pro_pathway$all_setM))), nrow=44, byrow=T)
-# # row.names(CRC_Pro_pathway_all_setM) = row.names(CRC_Pro_pathway$all_setM)
-# # colnames(CRC_Pro_pathway_all_setM) = colnames(CRC_Pro_pathway$all_setM)
-# # 
-# # pdf(paste(pd,'CRC_Pro_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
-# # par(oma=c(1,3,1,20))
-# # 
-# # CRC_Pro_pathway = heatmap.2(CRC_Pro_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
-# #                                cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
-# #                                col=getPalette, margins=c(5,5)) #
-# # dev.off()
-# # 
-# # 
-# # #Reactome_pathway_activation(ITRAQ_outlier_zscore)
-# # 
-# # # ##### PHOHSPHO DATA ##### 
-# # # ITRAQpho = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_24WHIM/WHIM_phosphoproteome/phosphoproteome-ratio-norm/phosphoproteome-ratio-norm_exp.txt',header=TRUE, sep="\t")
-# # # row.names(ITRAQpho) = ITRAQpho$gene.site
-# # # colnames(ITRAQpho)<-sub("\\..*", "", colnames(ITRAQpho))
-# # # # 56651 phosphosites
-# # # ITRAQpho=ITRAQpho[,-c(1,2)]
-# # # # get rid of TaxIR, HumIR, WHIM13.1
-# # # ITRAQpho = ITRAQpho[,-c(17,18,20)]
-# # # ITRAQpho.na = ITRAQpho[rowSums(is.na(ITRAQpho)) <= 14,] #35838 phosphosites
-# # # rm(ITRAQpho)
-# # # row.names(ITRAQpho.na) = make.names(sub("-NP_\\d+_"," ",row.names(ITRAQpho.na)), unique=T)
-# # # row.names(ITRAQpho.na) = make.names(sub(" _.*","",row.names(ITRAQpho.na)), unique=T)
-# # # row.names(ITRAQpho.na) = make.names(sub("_.*","",row.names(ITRAQpho.na)), unique=T)
-# # # ITRAQpho.na = as.matrix(ITRAQpho.na)
-# # # # use the adjusted z-score to find outliers
-# # # ITRAQpho_outliers=find_outlier(ITRAQpho.na, "ITRAQ phosphoproteome")#, filter = F, plot=F)
-# # # ITRAQpho_outlier_zscore=ITRAQpho_outliers$outlier_zscore
-# # # genes = sub("\\..*", "", row.names(ITRAQpho_outlier_zscore))
-# # # ITRAQpho_outlier_zscore.c = collapseRows(ITRAQpho_outlier_zscore, rowGroup=genes, rowID=row.names(ITRAQpho_outlier_zscore))$datETcollapsed
-# # # KEGGpathway_activation(ITRAQpho_outlier_zscore.c)
-# # # #Reactome_pathway_activation(ITRAQpho_outlier_zscore.c)
-# # 
-# # ##### plotting for WHIM #####
-# # # for (whim in colnames(ITRAQpho_outlier_zscore.c)){
-# # # #   plotWrapW(whim, "03460") # Fanconi anemia
-# # # #   plotWrapW(whim, "04014") # Ras signaling
-# # #   plotWrapW(whim, "04915") # ER signaling
-# # # #   plotWrapW(whim, "04151") # PI3K-AKT signaling
-# # # #   plotWrapW(whim, "04012") # ERBB2 signaling
-# # # #   plotWrapW(whim, "04064") # NFkB signaling
-# # # #   plotWrapW(whim, "04010") # MAPK signaling
-# # # #   plotWrapW(whim, "04110") # cell cycle
-# # # #   plotWrapW(whim, "04115") # p53 signaling
-# # # #   plotWrapW(whim, "05200") # pathways in cancer
+# # # ### OV_JHU ###
+# # # OV_JHU_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/OV/JHU_Proteome_CDAP.r2/TCGA_Ovarian_JHU_Proteome_CDAP.r2.itraq.tsv_hugoified.unshared_log_ratio.txt")
+# # # OV_JHU_Pro.n = format_pro(OV_JHU_Pro)
+# # # OV_JHU_Pro_pathway = KEGGpathway_activation(OV_JHU_Pro.n)
+# # # # how many are significant; need to coordinate with up or down...
+# # # OV_JHU_Pro_pathway_all_fdr = data.frame(matrix(unlist(OV_JHU_Pro_pathway$all_fdr), nrow=44, byrow=T),stringsAsFactors=FALSE)
+# # # row.names(OV_JHU_Pro_pathway_all_fdr) = row.names(OV_JHU_Pro_pathway$all_fdr)
+# # # colnames(OV_JHU_Pro_pathway_all_fdr) = colnames(OV_JHU_Pro_pathway$all_fdr)
+# # # for (i in 1:nrow(OV_JHU_Pro_pathway_all_fdr)){
+# # #   cat(row.names(OV_JHU_Pro_pathway_all_fdr)[i], ": ", sum(OV_JHU_Pro_pathway_all_fdr[i,] <=0.05, na.rm=T), "\n")
 # # # }
-# # 
-# # # ##### BRCA77 phosphoproteome #####
-# # # BRCA77pho = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_105BRCA/BRCA105_phosphoproteome/201507/BRCA77_unimodal_phosphoproteome-ratio-norm.txt',header=TRUE, sep="\t")
-# # # # collapse protein isoforms: use the maximum value if two; if more choose most representative (the representative row according to the least number of missing data, the highest sample mean, the highest sample variance, the highest connectivity)
-# # # # 33239 phosphosites
-# # # row.names(BRCA77pho) = BRCA77pho$Gene.site
-# # # BRCA77pho = BRCA77pho[,-c(1,2)]
-# # # BRCA77pho.na = BRCA77pho[rowSums(is.na(BRCA77pho)) <= 67,] #33239 phosphosites
-# # # rm(BRCA77pho)
-# # # row.names(BRCA77pho.na) = make.names(sub("-NP_\\d+_"," ",row.names(BRCA77pho.na)), unique=T)
-# # # row.names(BRCA77pho.na) = make.names(sub(" _.*","",row.names(BRCA77pho.na)), unique=T)
-# # # row.names(BRCA77pho.na) = make.names(sub("_.*","",row.names(BRCA77pho.na)), unique=T)
-# # # BRCA77pho.m = as.matrix(BRCA77pho.na)
-# # # BRCA77pho_outliers=find_outlier(BRCA77pho.m, "BRCA ITRAQ phosphoproteomes")
-# # # BRCA77pho_outlier_zscore=BRCA77pho_outliers$outlier_zscore
-# # # BRCA77pho_outlier=BRCA77pho_outliers$outlier
-# # # genes = sub("\\..*", "", row.names(BRCA77pho_outlier_zscore))
-# # # BRCA77pho_outlier_zscore.c = collapseRows(BRCA77pho_outlier_zscore, rowGroup=genes, rowID=row.names(BRCA77pho_outlier_zscore))$datETcollapsed
-# # # KEGGpathway_activation(BRCA77pho_outlier_zscore.c)
-# # # #Reactome_pathway_activation(BRCA77pho_outlier_zscore.c)
-# # 
-# # # for (h in colnames(BRCA77pho_outlier_zscore.c)){
-# # #   plotWrapH(h, "04151") # PI3K-AKT signaling
-# # #   plotWrapH(h, "04012") # ERBB2 signaling
-# # #   plotWrapH(h, "04064") # NFkB signaling
-# # #   plotWrapH(h, "04010") # MAPK signaling
-# # #   plotWrapH(h, "04110") # cell cycle
-# # #   plotWrapH(h, "04115") # p53 signaling
-# # #   plotWrapH(h, "05200") # pathways in cancer
+# # # 
+# # # # a brief visualization; need to use ggplot2 and facet in the future
+# # # OV_JHU_Pro_pathway_all_setM = matrix(as.numeric(as.character(unlist(OV_JHU_Pro_pathway$all_setM))), nrow=44, byrow=T)
+# # # row.names(OV_JHU_Pro_pathway_all_setM) = row.names(OV_JHU_Pro_pathway$all_setM)
+# # # colnames(OV_JHU_Pro_pathway_all_setM) = colnames(OV_JHU_Pro_pathway$all_setM)
+# # # 
+# # # pdf(paste(pd,'OV_JHU_Pro_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
+# # # par(oma=c(1,3,1,20))
+# # # 
+# # # OV_JHU_Pro_pathway = heatmap.2(OV_JHU_Pro_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
+# # #                                 cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
+# # #                                 col=getPalette, margins=c(5,5)) #
+# # # dev.off()
+# # # 
+# # # ##### doesn't work yet, rough #####
+# # # ### CRC ###
+# # # CRC_Pro = read.table(header=TRUE, sep="\t", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/201507_pancan_proteome_CDAP_r2/CRC/VU_Proteome_CDAP.r2/TCGA_Colon_VU_Proteome_CDAP.r2.spectral_counts.tsv_hugoified.unshared_spectal_counts.txt")
+# # # CRC_Pro.n = format_crc(CRC_Pro)
+# # # CRC_Pro_pathway = KEGGpathway_activation(CRC_Pro.n)
+# # # # how many are significant; need to coordinate with up or down...
+# # # CRC_Pro_pathway_all_fdr = data.frame(matrix(unlist(CRC_Pro_pathway$all_fdr), nrow=44, byrow=T),stringsAsFactors=FALSE)
+# # # row.names(CRC_Pro_pathway_all_fdr) = row.names(CRC_Pro_pathway$all_fdr)
+# # # colnames(CRC_Pro_pathway_all_fdr) = colnames(CRC_Pro_pathway$all_fdr)
+# # # for (i in 1:nrow(CRC_Pro_pathway_all_fdr)){
+# # #   cat(row.names(CRC_Pro_pathway_all_fdr)[i], ": ", sum(CRC_Pro_pathway_all_fdr[i,] <=0.05, na.rm=T), "\n")
 # # # }
-# # 
-# # # plot violin for top pathways?
-# # #       ### plot dens
-# # #       p = ggplot(data=sample2, aes(x=factor(inSet), y =S))
-# # #       p = p + geom_violin(aes(fill=factor(inSet)), alpha=0.5) + geom_jitter(height=0, alpha=0.2)
-# # #       p = p + theme_bw() +ylab("normalized protein expression ratio")
-# # #       p
+# # # 
+# # # # a brief visualization; need to use ggplot2 and facet in the future
+# # # CRC_Pro_pathway_all_setM = matrix(as.numeric(as.character(unlist(CRC_Pro_pathway$all_setM))), nrow=44, byrow=T)
+# # # row.names(CRC_Pro_pathway_all_setM) = row.names(CRC_Pro_pathway$all_setM)
+# # # colnames(CRC_Pro_pathway_all_setM) = colnames(CRC_Pro_pathway$all_setM)
+# # # 
+# # # pdf(paste(pd,'CRC_Pro_KEGG_signaling_pathway.pdf', sep="_"), width=15,height=10, useDingbats=FALSE)
+# # # par(oma=c(1,3,1,20))
+# # # 
+# # # CRC_Pro_pathway = heatmap.2(CRC_Pro_pathway_all_setM, trace="none",na.color="white", notecol="black",Rowv=F,
+# # #                                cexRow=1.2,cexCol=0.6, scale="none",#dendrogram='column',
+# # #                                col=getPalette, margins=c(5,5)) #
+# # # dev.off()
+# # # 
+# # # 
+# # # #Reactome_pathway_activation(ITRAQ_outlier_zscore)
+# # # 
+# # # # ##### PHOHSPHO DATA ##### 
+# # # # ITRAQpho = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_24WHIM/WHIM_phosphoproteome/phosphoproteome-ratio-norm/phosphoproteome-ratio-norm_exp.txt',header=TRUE, sep="\t")
+# # # # row.names(ITRAQpho) = ITRAQpho$gene.site
+# # # # colnames(ITRAQpho)<-sub("\\..*", "", colnames(ITRAQpho))
+# # # # # 56651 phosphosites
+# # # # ITRAQpho=ITRAQpho[,-c(1,2)]
+# # # # # get rid of TaxIR, HumIR, WHIM13.1
+# # # # ITRAQpho = ITRAQpho[,-c(17,18,20)]
+# # # # ITRAQpho.na = ITRAQpho[rowSums(is.na(ITRAQpho)) <= 14,] #35838 phosphosites
+# # # # rm(ITRAQpho)
+# # # # row.names(ITRAQpho.na) = make.names(sub("-NP_\\d+_"," ",row.names(ITRAQpho.na)), unique=T)
+# # # # row.names(ITRAQpho.na) = make.names(sub(" _.*","",row.names(ITRAQpho.na)), unique=T)
+# # # # row.names(ITRAQpho.na) = make.names(sub("_.*","",row.names(ITRAQpho.na)), unique=T)
+# # # # ITRAQpho.na = as.matrix(ITRAQpho.na)
+# # # # # use the adjusted z-score to find outliers
+# # # # ITRAQpho_outliers=find_outlier(ITRAQpho.na, "ITRAQ phosphoproteome")#, filter = F, plot=F)
+# # # # ITRAQpho_outlier_zscore=ITRAQpho_outliers$outlier_zscore
+# # # # genes = sub("\\..*", "", row.names(ITRAQpho_outlier_zscore))
+# # # # ITRAQpho_outlier_zscore.c = collapseRows(ITRAQpho_outlier_zscore, rowGroup=genes, rowID=row.names(ITRAQpho_outlier_zscore))$datETcollapsed
+# # # # KEGGpathway_activation(ITRAQpho_outlier_zscore.c)
+# # # # #Reactome_pathway_activation(ITRAQpho_outlier_zscore.c)
+# # # 
+# # # ##### plotting for WHIM #####
+# # # # for (whim in colnames(ITRAQpho_outlier_zscore.c)){
+# # # # #   plotWrapW(whim, "03460") # Fanconi anemia
+# # # # #   plotWrapW(whim, "04014") # Ras signaling
+# # # #   plotWrapW(whim, "04915") # ER signaling
+# # # # #   plotWrapW(whim, "04151") # PI3K-AKT signaling
+# # # # #   plotWrapW(whim, "04012") # ERBB2 signaling
+# # # # #   plotWrapW(whim, "04064") # NFkB signaling
+# # # # #   plotWrapW(whim, "04010") # MAPK signaling
+# # # # #   plotWrapW(whim, "04110") # cell cycle
+# # # # #   plotWrapW(whim, "04115") # p53 signaling
+# # # # #   plotWrapW(whim, "05200") # pathways in cancer
+# # # # }
+# # # 
+# # # # ##### BRCA77 phosphoproteome #####
+# # # # BRCA77pho = read.table(file='/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_105BRCA/BRCA105_phosphoproteome/201507/BRCA77_unimodal_phosphoproteome-ratio-norm.txt',header=TRUE, sep="\t")
+# # # # # collapse protein isoforms: use the maximum value if two; if more choose most representative (the representative row according to the least number of missing data, the highest sample mean, the highest sample variance, the highest connectivity)
+# # # # # 33239 phosphosites
+# # # # row.names(BRCA77pho) = BRCA77pho$Gene.site
+# # # # BRCA77pho = BRCA77pho[,-c(1,2)]
+# # # # BRCA77pho.na = BRCA77pho[rowSums(is.na(BRCA77pho)) <= 67,] #33239 phosphosites
+# # # # rm(BRCA77pho)
+# # # # row.names(BRCA77pho.na) = make.names(sub("-NP_\\d+_"," ",row.names(BRCA77pho.na)), unique=T)
+# # # # row.names(BRCA77pho.na) = make.names(sub(" _.*","",row.names(BRCA77pho.na)), unique=T)
+# # # # row.names(BRCA77pho.na) = make.names(sub("_.*","",row.names(BRCA77pho.na)), unique=T)
+# # # # BRCA77pho.m = as.matrix(BRCA77pho.na)
+# # # # BRCA77pho_outliers=find_outlier(BRCA77pho.m, "BRCA ITRAQ phosphoproteomes")
+# # # # BRCA77pho_outlier_zscore=BRCA77pho_outliers$outlier_zscore
+# # # # BRCA77pho_outlier=BRCA77pho_outliers$outlier
+# # # # genes = sub("\\..*", "", row.names(BRCA77pho_outlier_zscore))
+# # # # BRCA77pho_outlier_zscore.c = collapseRows(BRCA77pho_outlier_zscore, rowGroup=genes, rowID=row.names(BRCA77pho_outlier_zscore))$datETcollapsed
+# # # # KEGGpathway_activation(BRCA77pho_outlier_zscore.c)
+# # # # #Reactome_pathway_activation(BRCA77pho_outlier_zscore.c)
+# # # 
+# # # # for (h in colnames(BRCA77pho_outlier_zscore.c)){
+# # # #   plotWrapH(h, "04151") # PI3K-AKT signaling
+# # # #   plotWrapH(h, "04012") # ERBB2 signaling
+# # # #   plotWrapH(h, "04064") # NFkB signaling
+# # # #   plotWrapH(h, "04010") # MAPK signaling
+# # # #   plotWrapH(h, "04110") # cell cycle
+# # # #   plotWrapH(h, "04115") # p53 signaling
+# # # #   plotWrapH(h, "05200") # pathways in cancer
+# # # # }
+# # # 
+# # # # plot violin for top pathways?
+# # # #       ### plot dens
+# # # #       p = ggplot(data=sample2, aes(x=factor(inSet), y =S))
+# # # #       p = p + geom_violin(aes(fill=factor(inSet)), alpha=0.5) + geom_jitter(height=0, alpha=0.2)
+# # # #       p = p + theme_bw() +ylab("normalized protein expression ratio")
+# # # #       p
