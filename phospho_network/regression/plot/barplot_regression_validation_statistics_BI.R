@@ -1,4 +1,5 @@
-# Yige Wu @ WashU 2016 Dec
+# adopted from Yige Wu @ WashU 2016 Dec
+# Kuan @wustl 2017
 # barplot the validation statistics for regression results
 
 # choose kinase/phosphotase, cancer , significance level -----------------------------------------------

@@ -42,13 +42,35 @@ plot_trans_landscape = function(pair){
   p = p + labs(x = paste(pair,"phosphosite position"), y="Regression coefficient")
   p = p + theme(axis.title = element_text(size=10), axis.text.x = element_text(colour="black", size=6,angle=90, vjust=0.5), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=14))
   p
-  fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/',pair,'_site_trans_coef.pdf',sep ="")
+  fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/PDX_',pair,'_site_trans_coef.pdf',sep ="")
+  ggsave(file=fn, height = 4, width = 7, useDingbats=FALSE)
+}
+
+plot_cis_landscape = function(gene){
+  thres = 0
+  all_gene_sites = table_HUMAN_cis[table_HUMAN_cis$KINASE==gene,]
+  all_gene_sites_count = all_gene_sites[all_gene_sites$Size>thres,]
+  all_gene_sites_count$pho_pos = as.numeric(sub("[A-Z]([0-9]+).*","\\1",all_gene_sites_count$SUB_MOD_RSD))
+
+  p = ggplot(all_gene_sites_count,aes(x=pho_pos, y=coef_pro_kin))# make this the original ethni
+  #p = p + facet_grid(Cancer~., drop=T, space = "free_y")#, space = "free", scales = "free")
+  p = p + geom_point(aes(fill=-log10(FDR_pro_kin), color=ifelse(sig, "black","grey"), size = Size/20),pch=21, alpha = 0.8)
+  p = p + scale_fill_gradientn(name= "-log(FDR)", na.value=NA, colours=col_paletteR(100))
+  p = p + geom_text(aes(label=SUB_MOD_RSD),size=2)
+  p = p + scale_colour_manual(values=c("black","grey"))
+  p = p + scale_size_continuous(breaks = c(1,2,4))
+  p = p + theme_bw() #+ theme_nogrid()
+  p = p + geom_hline(yintercept = 0, alpha=0.5) + expand_limits(x=0)
+  p = p + labs(x = paste(gene,"phosphosite position"), y="Regression coefficient")
+  p = p + theme(axis.title = element_text(size=10), axis.text.x = element_text(colour="black", size=10), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=14))
+  p
+  fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/PDX_',gene,'_site_cis_coef.pdf',sep ="")
   ggsave(file=fn, height = 4, width = 7, useDingbats=FALSE)
 }
 
 # input regression processed data -----------------------------------------
-table_HUMAN_cis = read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_HUMAN_", protein,"_substrate_regression_cis.txt",sep = ""))
-table_HUMAN_trans = read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_HUMAN_", protein,"_substrate_regression_trans.txt",sep = ""))
+table_HUMAN_cis = read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_PDX_", protein,"_substrate_regression_cis.txt",sep = ""))
+table_HUMAN_trans = read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_PDX_", protein,"_substrate_regression_trans.txt",sep = ""))
 
 # cis
 table_HUMAN_cis$sig = table_HUMAN_cis$FDR_pro_kin < sig
@@ -75,7 +97,7 @@ cis_genes_3 = names(table(cis_genes)[table(cis_genes)>2])
 #   p = p + labs(x = paste(gene,"phosphosite position"), y="Regression coefficient")
 #   p = p + theme(axis.title = element_text(size=10), axis.text.x = element_text(colour="black", size=10), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=14))
 #   p
-#   fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/',gene,'_site_cis_coef.pdf',sep ="")
+#   fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/PDX_',gene,'_site_cis_coef.pdf',sep ="")
 #   ggsave(file=fn, height = 4, width = 7, useDingbats=FALSE)
 # }
 
@@ -103,7 +125,7 @@ trans_pairs_3 = names(table(trans_pairs)[table(trans_pairs)>2])
 #   p = p + labs(x = paste(pair,"phosphosite position"), y="Regression coefficient")
 #   p = p + theme(axis.title = element_text(size=10), axis.text.x = element_text(colour="black", size=6,angle=90, vjust=0.5), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=14))
 #   p
-#   fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/',pair,'_site_trans_coef.pdf',sep ="")
+#   fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/PDX_',pair,'_site_trans_coef.pdf',sep ="")
 #   ggsave(file=fn, height = 4, width = 7, useDingbats=FALSE)
 # }
 # 
@@ -129,11 +151,15 @@ trans_pairs_3 = names(table(trans_pairs)[table(trans_pairs)>2])
 #   p = p + labs(x = paste(pair,"phosphosite position"), y="Regression coefficient")
 #   p = p + theme(axis.title = element_text(size=10), axis.text.x = element_text(colour="black", size=6,angle=90, vjust=0.5), axis.text.y = element_text(colour="black", size=10))#element_text(colour="black", size=14))
 #   p
-#   fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/',pair,'_site_trans_disc_coef.pdf',sep ="")
+#   fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/landscape/PDX_',pair,'_site_trans_disc_coef.pdf',sep ="")
 #   ggsave(file=fn, height = 4, width = 7, useDingbats=FALSE)
 # }
-plot_trans_landscape("EGFR-GAB1")
-plot_trans_landscape("ATM-TP53BP1")
-plot_trans_landscape("CDK1-NUP98")
-plot_trans_landscape("MAP3K5-MAP2K6")
-plot_trans_landscape("MAPK3-MAP2K1")
+plot_trans_landscape("MAPK3-RAF1")
+plot_cis_landscape("RAF1")
+plot_cis_landscape("AKT1")
+plot_cis_landscape("ERBB2")
+# plot_trans_landscape("EGFR-GAB1")
+# plot_trans_landscape("ATM-TP53BP1")
+# plot_trans_landscape("CDK1-NUP98")
+# plot_trans_landscape("MAP3K5-MAP2K6")
+# plot_trans_landscape("MAPK3-MAP2K1")

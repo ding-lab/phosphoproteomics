@@ -74,6 +74,7 @@ if ( protein == "phosphotase") {
 if ( protein == "kinase" ) {
   ### read in the kinase/substrate table/ phosphorylation data ###
   k_s_table = read.delim(paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphositePlus/data/Kinase_Substrate_Dataset_human_final_hugoified.txt",sep=""))
+  k_s_table_network = read.delim(paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphoNetworks/comKSI.csv",sep=""))
 }
 k_s_table_RXN = k_s_table[,c("GENE","SUB_GENE","IN_VIVO_RXN","IN_VITRO_RXN")]
 colnames(k_s_table_RXN) = c("KINASE","SUBSTRATE","IN_VIVO_RXN","IN_VITRO_RXN")
@@ -81,16 +82,24 @@ k_s_table_RXN = k_s_table_RXN[!duplicated(c(k_s_table_RXN$KINASE,k_s_table$SUBST
 
 # input regression processed data -----------------------------------------
 table_2can <- read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/analysis_results/tables/",protein,"_substrate_regression_trans_edited.txt",sep = ""))
-table_2can = merge(table_2can,manning_kinome_map,by="KINASE",all.x=T,all.y=F)
+table_2can$dataset = "PhosphositePlus"
 
 table_2can_new = read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/analysis_results/tables/",protein,"_substrate_regression_trans_edited_phosphonetwork.txt",sep = ""))
 table_2can_new = table_2can_new[!(table_2can_new$pair %in% table_2can$pair),] # only keep the ones not in previous
+table_2can_new$dataset = "PhosphoNetwork"
+
+table_2can_combined = rbind(table_2can, table_2can_new)
+tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/",protein,"_substrate_regression_trans_edited_combined.txt", sep="")
+write.table(table_2can_combined, file=tn, quote=F, sep = '\t', row.names = FALSE)
+
+table_2can = merge(table_2can,manning_kinome_map,by="KINASE",all.x=T,all.y=F)
 table_2can_new = merge(table_2can_new,manning_kinome_map,by="KINASE",all.x=T)
 
 # save results for supplementary tables
 table_2can_cis_sig = table_2can[table_2can$self & table_2can$FDR_pro_kin < sig & table_2can$coef_pro_kin > 0,]
 table_2can_trans_sig = table_2can[!table_2can$self & table_2can$FDR_pho_kin < sig & table_2can$coef_pho_kin > 0,]
 table_2can_new_trans_sig = table_2can_new[!table_2can_new$self & table_2can_new$FDR_pho_kin < sig & table_2can_new$coef_pho_kin > 0,]
+table_2can_trans_comb_sig = rbind(table_2can_trans_sig,table_2can_new_trans_sig)
 
 tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/",protein,"_substrate_regression_trans_edited_cis_sig.txt", sep="")
 write.table(table_2can_cis_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)
@@ -98,6 +107,8 @@ tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/",protein,"_substr
 write.table(table_2can_trans_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)
 tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/",protein,"_substrate_regression_trans_edited_phosphonetwork_trans_sig.txt",sep = "")
 write.table(table_2can_new_trans_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)
+tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/",protein,"_substrate_regression_trans_edited_trans_combined_sig.txt",sep = "")
+write.table(table_2can_trans_comb_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)
 
 ##### scan for pathway enrichment
 cis_results = rbind(table_2can[table_2can$self,],table_2can_new[table_2can_new$self,])
