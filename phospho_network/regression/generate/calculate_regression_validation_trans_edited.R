@@ -16,11 +16,11 @@ library(grid)
 require(plyr)
 library(readr)
 
-# # for working on Kuan's mac
-# baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+# for working on Kuan's mac
+baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
 
-# for working on Yige's mac
-baseD = "/Users/yigewu/Box\ Sync/"
+# # for working on Yige's mac
+# baseD = "/Users/yigewu/Box\ Sync/"
 
 
 setwd(paste(baseD,"pan3can_analysis/phospho_network",sep=""))

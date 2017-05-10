@@ -3,9 +3,9 @@
 # pho_sub~pro_sub+pho_kin(callapsed)
 
 # choose kinase/phosphotase, significance level, outlier threshold and least sample number-------------------------
-least_samples <- 5# least number of samples with complete data for each model
-# protein <- "kinase"
-protein <- "phosphotase"
+least_samples <- 10# least number of samples with complete data for each model
+protein <- "kinase"
+# protein <- "phosphotase"
 
 # library -----------------------------------------------------------------
 library(stringr)
@@ -15,11 +15,11 @@ library(grid)
 require(plyr)
 
 
-# # for working on Kuan's mac
-# baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+# for working on Kuan's mac
+baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
 
-# for working on Yige's mac
-baseD = "/Users/yigewu/Box\ Sync/"
+# # for working on Yige's mac
+# baseD = "/Users/yigewu/Box\ Sync/"
 
 
 setwd(paste(baseD,"pan3can_analysis/phospho_network",sep=""))
@@ -28,40 +28,57 @@ source("../pan3can_aes.R") # aes for general purposes; it should be one director
 # input k_s_table according to kinase or phosphotase-------------------------------------------------------------------
 if ( protein == "kinase" ) {
   ### read in the kinase/substrate table/ phosphorylation data ###
-  k_s_table = read.delim(paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphositePlus/data/Kinase_Substrate_Dataset_human_final_hugoified.txt",sep=""))
+  k_s_table_phosphosite = read.delim(paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphositePlus/data/Kinase_Substrate_Dataset_human_final_hugoified.txt",sep=""))
+  k_s_table_network = read.delim(paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphoNetworks/comKSI.csv",sep=""))
+  k_s_table_phosphosite_sum = k_s_table_phosphosite[,c("GENE","SUB_GENE")]
+  colnames(k_s_table_phosphosite_sum) = c("Kinase","Substrate")
+  k_s_table_phosphosite_sum$Score=0
+  k_s_table = rbind(k_s_table_phosphosite_sum,k_s_table_network)
 }
 
 if ( protein == "phosphotase" ) {
   ### read in the phosphotase/substrate table/ phosphorylation data ### 
   k_s_table <- read.csv(paste(baseD,"pan3can_shared_data/Phospho_databases/DEPOD/DEPOD_201612_human_phosphatase-protein_substrate_to_Kuan-lin.csv",sep = ""))
-  colnames(k_s_table) <- c("Phosphatase_UniProtAC_human","GENE","Substrate_UniProtAC_ref","SUB_GENE","Substrate_Type","DephosphoSite","BioassayType", "PubMed_ID_rev")
+  colnames(k_s_table) <- c("Phosphatase_UniProtAC_human","Kinase","Substrate_UniProtAC_ref","Substrate","Substrate_Type","DephosphoSite","BioassayType", "PubMed_ID_rev")
 }
 
-kinase_trans <- as.vector(unique(k_s_table$GENE[as.vector(k_s_table$GENE)!=as.vector(k_s_table$SUB_GENE)]))
-kinase_cis <- as.vector(unique(k_s_table$GENE[as.vector(k_s_table$GENE)==as.vector(k_s_table$SUB_GENE)]))
+substrate_trans <- as.vector(unique(k_s_table$Substrate[as.vector(k_s_table$Kinase)!=as.vector(k_s_table$Substrate)]))
+kinase_trans <- as.vector(unique(k_s_table$Kinase[as.vector(k_s_table$Kinase)!=as.vector(k_s_table$Substrate)]))
+kinase_cis <- as.vector(unique(k_s_table$Kinase[as.vector(k_s_table$Kinase)==as.vector(k_s_table$Substrate)]))
+table_single <- read.delim(paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_HUMAN_",protein,"_substrate_regression_trans.txt", sep=""))
 
 # looping cancer -----------------------------------------------------------
-for (cancer in c("BRCA","OV")) { 
+for (cancer in c("BRCA")) { 
   # input according to cancer type-------------------------------------------------------------------
   if (cancer == "BRCA") {
-    pro_data <- read.delim(paste(baseD,"pan3can_shared_data/BRCA/BRCA_PRO_formatted_normalized_max10NA.txt",sep=""))
-    pro_main <- pro_data[,-1]
+    HUMAN_pro_f = paste(baseD,"pan3can_shared_data/BRCA/BRCA77_unimodal_proteome-ratio-norm_exp_collapsed.txt",sep="")
+    pro_data <- read.delim(HUMAN_pro_f)
     
-    pho_gdata = read.delim(paste(baseD,"pan3can_shared_data/BRCA/BRCA_PHO_formatted_normalized_max10NA.txt",sep=""))
-    pho_gmain <- pho_gdata[,-1]
+    ## read in grouped phosphorylation data!
+    HUMAN_pho_g = paste(baseD,"pan3can_shared_data/BRCA/BRCA77_unimodal_phosphoproteome-ratio-norm_collapsed.txt",sep="")
+    pho_gdata = read.delim(HUMAN_pho_g)
     
-    pho_raw <- read_delim(paste(baseD,"pan3can_shared_data/BRCA/BRCA_RPPA_formatted_wGpos_forR.txt",sep=""), "\t", escape_double = FALSE, trim_ws = TRUE)
+    
+    pho_raw <- read.delim(paste(baseD,"pan3can_shared_data/BRCA/BRCA_RPPA_formatted_wGpos.txt",sep=""), sep="\t", row.names=NULL)
+    colnames(pho_raw)[1:2] = c("genomic_pos","antibody")
     pho_data <- pho_raw[!is.na(pho_raw$genomic_pos) & pho_raw$genomic_pos != ".",]
-    pho_main <- pho_data[,-c(1,2)]
+    # harmonize sample names
+    colnames(pro_data) = gsub("[0-9][0-9]TCGA","01A",colnames(pro_data))
+    colnames(pho_gdata) = gsub("[0-9][0-9]TCGA","01A",colnames(pho_gdata))
     
-    transvar <- read_delim(paste(baseD,"pan3can_shared_data/BRCA/BRCA_RPPA_formatted_transvar_output.txt",sep = ""), "\t", escape_double = FALSE, trim_ws = TRUE)
+    BRCA_samples = intersect(intersect(colnames(pho_data),colnames(pho_gdata)),colnames(pro_data))
+    pro_main = pro_data[,BRCA_samples]
+    pho_main = pho_data[,BRCA_samples]
+    pho_gmain = pho_gdata[,BRCA_samples]
+    
+    transvar <- read.delim(paste(baseD,"pan3can_shared_data/BRCA/BRCA_RPPA_formatted_transvar_output.txt",sep = ""), sep="\t")
   }
   
   if ( cancer == "OV" ) {
     pho_gdata = read.delim(paste(baseD,"pan3can_shared_data/OV/OV_PNNL_PHO_formatted_normalized_max10NA.txt",sep=""))
     pho_gmain <- pho_gdata[,-1]
     
-    pho_raw <- read_delim(paste(baseD,"pan3can_shared_data/OV/OV_RPPA_formatted_wGpos_forR.txt",sep=""), "\t", escape_double = FALSE, trim_ws = TRUE)
+    pho_raw <- read.delim(paste(baseD,"pan3can_shared_data/OV/OV_RPPA_formatted_wGpos_forR.txt",sep=""), "\t", escape_double = FALSE, trim_ws = TRUE)
     pho_data <- pho_raw[!is.na(pho_raw$genomic_pos) & pho_raw$genomic_pos != ".",]
     pho_main <- pho_data[,-c(1,2)]
     temp <-  str_split_fixed(colnames(pho_raw[,-c(1,2)]),"-",2)
@@ -75,10 +92,11 @@ for (cancer in c("BRCA","OV")) {
     colnames(pro_data) <- str_split_fixed(colnames(pro_data),"_",2)[,1]
     pro_main <- pro_data[,OV_samples]
     
-    transvar <- read_delim(paste(baseD,"pan3can_shared_data/OV/OV_RPPA_formatted_transvar_output.txt",sep = ""), "\t", escape_double = FALSE, trim_ws = TRUE)
+    transvar <- read.delim(paste(baseD,"pan3can_shared_data/OV/OV_RPPA_formatted_transvar_output.txt",sep = ""), "\t", escape_double = FALSE, trim_ws = TRUE)
   }
   
-  transvar_split <- data.frame(str_split_fixed(transvar$`coordinates(gDNA/cDNA/protein)`,"/", 3)[,1],str_split_fixed(transvar$input,":",2)[,2])
+  #transvar_split <- data.frame(str_split_fixed(transvar$`coordinates(gDNA/cDNA/protein)`,"/", 3)[,1],str_split_fixed(transvar$input,":",2)[,2])
+  transvar_split <- data.frame(str_split_fixed(transvar[,5],"/", 3)[,1],str_split_fixed(transvar$input,":",2)[,2])
   colnames(transvar_split) <- c("genomic_pos","SUB_MOD_RSD")
   transvar_split <- transvar_split[transvar_split$genomic_pos != ".",]
   transvar_split <- unique(transvar_split)
@@ -109,7 +127,7 @@ for (cancer in c("BRCA","OV")) {
   # calculate the length of trans table
   ntrans <- 0
   for (gene in kinase_trans) {
-    subs <- k_s_table$SUB_GENE[k_s_table$GENE==gene & k_s_table$SUB_GENE!=gene]
+    subs <- k_s_table$Substrate[k_s_table$Kinase==gene & k_s_table$Substrate!=gene]
     for ( sub in unique(subs)) {
       ntrans <- ntrans + length(which(pho_rsd_split$SUBSTRATE==sub))
     }
@@ -192,7 +210,7 @@ for (cancer in c("BRCA","OV")) {
     pho_kinase_g <- pho_gmain[pho_gdata$X == kinase,]
     
     if ( nrow(pho_kinase_g) > 0 ){
-      k_sub <- unique(k_s_table$SUB_GENE[k_s_table$GENE == kinase & k_s_table$SUB_GENE != kinase])
+      k_sub <- unique(k_s_table$Substrate[k_s_table$Kinase == kinase & k_s_table$Substrate != kinase])
       
       for (substrate in k_sub){# for each substrate for one kinase
         # find its phosphosites-row numbers
@@ -259,7 +277,7 @@ for (cancer in c("BRCA","OV")) {
 
 # combine table from BRCA and OV and adjust -------------------------------------------------------
 ## combine table from BRCA and OV
-temp <- rbind(table_BRCA,table_OV)
+temp <- table_BRCA
 table_2can <- unique(temp) ## because there're duplicate phophorylation levels for a residual
 table_2can$self <- as.character(table_2can$KINASE) == as.character(table_2can$SUBSTRATE)
 table_2can$SELF <- "trans"; table_2can$SELF[table_2can$self] <- "cis"
@@ -278,5 +296,10 @@ for (cancer in c("BRCA","OV")) {
 table_2can$pair <- paste(table_2can$KINASE,table_2can$SUBSTRATE,table_2can$SUB_MOD_RSD,sep = ":")
 # write out tables --------------------------------------------------------
 
-tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/RPPA_",protein,"_substrate_regression_trans_edited.txt", sep="")
+tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/RPPA_",protein,"_substrate_regression.txt", sep="")
 write.table(table_2can, file=tn, quote=F, sep = '\t', row.names = FALSE)
+
+table_2can_sig = table_2can[(!is.na(table_2can$FDR_pro_kin) & table_2can$FDR_pro_kin<0.05) | 
+             (!is.na(table_2can$FDR_pho_kin) & table_2can$FDR_pho_kin < 0.05),]
+tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/RPPA_",protein,"_substrate_regression_sig.txt", sep="")
+write.table(table_2can_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)

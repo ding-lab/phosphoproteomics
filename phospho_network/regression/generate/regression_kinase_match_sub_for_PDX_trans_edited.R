@@ -15,11 +15,11 @@ library(grid)
 require(plyr)
 
 
-# # for working on Kuan's mac
-# baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+# for working on Kuan's mac
+baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
 
-# for working on Yige's mac
-baseD = "/Users/yigewu/Box\ Sync/"
+# # for working on Yige's mac
+# baseD = "/Users/yigewu/Box\ Sync/"
 
 
 setwd(paste(baseD,"pan3can_analysis/phospho_network",sep=""))
@@ -42,9 +42,9 @@ kinase_cis <- as.vector(unique(k_s_table$GENE[as.vector(k_s_table$GENE)==as.vect
 
 # looping cancer -----------------------------------------------------------
 cancer = "BRCA"
-BRCA_pro_f = paste(baseD,"CPTAC_24WHIM_WUPCC_shared/WHIM Proteomic Data/WHIM_proteome/proteome-ratio-norm_exp_v2.txt",sep="")
+BRCA_pro_f = paste(baseD,"../CPTAC_24WHIM_WUPCC_shared/WHIM Proteomic Data/WHIM_proteome/proteome-ratio-norm_exp_v2.txt",sep="")
 pro_data <- read.delim(BRCA_pro_f)
-BRCA_pho_f = paste(baseD,"CPTAC_24WHIM_WUPCC_shared/WHIM Proteomic Data/WHIM_phosphoproteome/phosphoproteome-ratio-norm_exp.txt",sep="")
+BRCA_pho_f = paste(baseD,"../CPTAC_24WHIM_WUPCC_shared/WHIM Proteomic Data/WHIM_phosphoproteome/phosphoproteome-ratio-norm_exp.txt",sep="")
 pho_data = read.delim(BRCA_pho_f)
 
 pho_rsd_split <- data.frame(str_split_fixed(pho_data$gene.site, "[_-]", 5))
