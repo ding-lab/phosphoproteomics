@@ -76,6 +76,7 @@ if ( protein == "kinase" ) {
   ### read in the kinase/substrate table/ phosphorylation data ###
   k_s_table_phosphosite = read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphositePlus/data/Kinase_Substrate_Dataset_human_final_hugoified.txt",sep=""))
   k_s_table_network = read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphoNetworks/comKSI.csv",sep=""))
+  k_s_table_network_site = read.delim(stringsAsFactors = F,paste(baseD,"pan3can_shared_data/Phospho_databases/PhosphoNetworks/highResolutionNetwork.table.csv",sep=""))
 }
 k_s_table_RXN = k_s_table_phosphosite[,c("GENE","SUB_GENE","IN_VIVO_RXN","IN_VITRO_RXN")]
 colnames(k_s_table_RXN) = c("KINASE","SUBSTRATE","IN_VIVO_RXN","IN_VITRO_RXN")
@@ -97,9 +98,24 @@ cat("Number of unique tested kinases in trans regulation:", num_trans, "\n")
 table_HUMAN_cis = merge(table_HUMAN_cis,manning_kinome_map,by="KINASE",all.x=T,all.y=F)
 table_HUMAN_trans = merge(table_HUMAN_trans,manning_kinome_map,by="KINASE",all.x=T)
 
+table_HUMAN_cis$PresentInPhosphositeplus = paste(table_HUMAN_cis$KINASE,table_HUMAN_cis$SUBSTRATE,table_HUMAN_cis$SUB_MOD_RSD) %in% paste(k_s_table_phosphosite$GENE,k_s_table_phosphosite$SUB_GENE,k_s_table_phosphosite$SUB_MOD_RSD)
+table_HUMAN_trans$PresentInPhosphositeplus = paste(table_HUMAN_trans$KINASE,table_HUMAN_trans$SUBSTRATE,table_HUMAN_trans$SUB_MOD_RSD) %in% paste(k_s_table_phosphosite$GENE,k_s_table_phosphosite$SUB_GENE,k_s_table_phosphosite$SUB_MOD_RSD)
+table_HUMAN_cis$PresentInPhosphonetwork = paste(table_HUMAN_cis$KINASE,table_HUMAN_cis$SUBSTRATE,table_HUMAN_cis$SUB_MOD_RSD) %in% paste(k_s_table_network_site$kinase,k_s_table_network_site$substrate,k_s_table_network_site$site)
+table_HUMAN_trans$PresentInPhosphonetwork = paste(table_HUMAN_trans$KINASE,table_HUMAN_trans$SUBSTRATE,table_HUMAN_trans$SUB_MOD_RSD) %in% paste(k_s_table_network_site$kinase,k_s_table_network_site$substrate,k_s_table_network_site$site)
+
 # save results for supplementary tables
 table_HUMAN_cis_sig = table_HUMAN_cis[table_HUMAN_cis$FDR_pro_kin < sig & table_HUMAN_cis$coef_pro_kin > 0,]
 table_HUMAN_trans_sig = table_HUMAN_trans[table_HUMAN_trans$FDR_pho_kin < sig & table_HUMAN_trans$coef_pho_kin > 0,]
+
+# specific sites found in databases
+cat("Number of significant KS sites found previously:\n")
+table(table_HUMAN_cis_sig$PresentInPhosphositeplus)
+length(unique(table_HUMAN_cis_sig$KINASE[!table_HUMAN_cis_sig$PresentInPhosphonetwork]))
+
+table(table_HUMAN_trans_sig$dataset,table_HUMAN_trans_sig$PresentInPhosphositeplus)
+sum(table(table_HUMAN_trans_sig$KINASE[!table_HUMAN_trans_sig$PresentInPhosphositeplus])[c(7,8,19:27,72:80)])
+length(unique(table_HUMAN_trans_sig$SUBSTRATE[!table_HUMAN_trans_sig$PresentInPhosphositeplus]))
+cat("\n")
 
 num_cis = dim(table_HUMAN_cis_sig[!duplicated(table_HUMAN_cis_sig$KINASE),])[1]
 cat("Number of unique tested kinases with significant cis regulation:", num_cis, "\n")
@@ -108,6 +124,51 @@ table(table_HUMAN_cis_sig$KINASE)[order(table(table_HUMAN_cis_sig$KINASE),decrea
 
 cat("Number of unique tested kinases with significant trans regulation:", num_trans, "\n")
 table(table_HUMAN_trans_sig$KINASE)[order(table(table_HUMAN_trans_sig$KINASE),decreasing = T)][1:30]
+
+# novel vs. in database sites
+pho_elm_phosphosites = read.table(row.names=NULL,header=TRUE, sep="\t", quote = "", file="/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/Phospho_databases/Phospho.ELM/phosphoELM_all_2015-04.dump_human_transvar_out.txt")
+pdb_phosphosites = read.table(row.names=NULL,header=TRUE, sep="\t", quote = "", file= "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_analysis/HotPho/data_runs/PDB_phosphosite_wGpos.maf")
+pdb_phosphosites = pdb_phosphosites[!is.na(pdb_phosphosites$genomic_pos),]
+pho_elm_phosphosites = pho_elm_phosphosites[!is.na(pho_elm_phosphosites) & !duplicated(pho_elm_phosphosites[,5]) & pho_elm_phosphosites[,5] != "././.",]
+pho_elm_phosphosites_gpos = as.character(unique(gsub("\\/c.*","",pho_elm_phosphosites[,5])))
+
+HUMAN_file = "/Users/khuang/Box Sync/PhD/proteogenomics/CPTAC_pan3Cancer/pan3can_shared_data/BRCA/BRCA77_unimodal_phosphoproteome-ratio-norm_wGpos_cleaned.txt"
+HUMAN_pho = read.table(stringsAsFactors = F,row.names=NULL, header=TRUE, sep="\t", file= HUMAN_file)
+HUMAN_pho_count = HUMAN_pho[,c("genomic_pos","Gene","Gene.site")]
+HUMAN_pho_count$Status = "Novel"
+HUMAN_pho_count$Status[HUMAN_pho_count$genomic_pos %in% 
+                         c(pdb_phosphosites$genomic_pos, pho_elm_phosphosites_gpos)] = "In_Databases"
+HUMAN_pho_count$Gene_site_aa = gsub(":.*:",":",HUMAN_pho_count$Gene.site)
+HUMAN_pho_count$Regulation = "None"
+HUMAN_pho_count$Regulation[HUMAN_pho_count$Gene_site_aa %in% gsub(".*:(.*:)","\\1",table_HUMAN_cis_sig$pair)] = "Auto-phosphorylation"
+HUMAN_pho_count$Regulation[HUMAN_pho_count$Gene_site_aa %in% gsub(".*:(.*:)","\\1",table_HUMAN_trans_sig$pair)] = "Trans-phosphorylation"
+HUMAN_pho_count$Regulation[HUMAN_pho_count$Gene_site_aa %in% gsub(".*:(.*:)","\\1",table_HUMAN_cis_sig$pair) &
+                             HUMAN_pho_count$Gene_site_aa %in% gsub(".*:(.*:)","\\1",table_HUMAN_trans_sig$pair)] = "Auto and trans phosphorylation"
+counts = data.frame(table(HUMAN_pho_count$Regulation,HUMAN_pho_count$Status))
+counts
+cat("Novel sites showing regulation:",sum(counts$Counts[counts$Status=="Novel"]),"\n")
+cat("Database sites showing regulation:",sum(counts$Counts[counts$Status=="In_Databases"]),"\n")
+colnames(counts) = c("Regulation","Status","Counts")
+counts = counts[counts$Regulation != "None",]
+counts$type = paste(counts$Regulation,counts$Status)
+counts_novel = counts[counts$Status=="Novel",]
+counts_old = counts[counts$Status=="In_Databases",]
+
+p = ggplot(counts_novel,aes(x=Status, y=Counts, fill=Regulation))
+p = p + geom_bar(stat="identity") + theme_bw() #+ theme_nogrid()
+p = p + geom_text(aes(label = Counts), size=5)
+p = p + coord_polar("y", start=0)
+p
+fn = paste(pd, 'status_regulation_summary_novel.pdf',sep ="_")
+ggsave(file=fn, height=3, useDingbats=FALSE)
+
+p = ggplot(counts_old,aes(x=Status, y=Counts, fill=Regulation))
+p = p + geom_bar(stat="identity") + theme_bw() #+ theme_nogrid()
+p = p + geom_text(aes(label = Counts), size=5)
+p = p + coord_polar("y", start=0)
+p
+fn = paste(pd, 'status_regulation_summary_old.pdf',sep ="_")
+ggsave(file=fn,height=3, useDingbats=FALSE)
 
 # output stats 
 cat("Number of total cis K-S relations investigated:",nrow(table_HUMAN_cis),"\n")
@@ -137,11 +198,33 @@ cat("Number of sig phosphosites in trans analysis:",trans_sig_site_c,"\n")
 cat("Number of all phosphosites in trans analysis:",trans_all_site_c,"\n")
 cat("Percentage of sig phosphosites in trans analysis:",trans_sig_site_c/trans_all_site_c,"\n\n")
 
-# # write output table
-# tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_HUMAN_", protein,"_substrate_regression_cis_sig_fam.txt",sep = "")
-# write.table(table_HUMAN_cis_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)
-# tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_HUMAN_", protein,"_substrate_regression_trans_sig_fam.txt",sep = "")
-# write.table(table_HUMAN_trans_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)
+# write output table
+tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_HUMAN_", protein,"_substrate_regression_cis_sig_fam_noveltag.txt",sep = "")
+write.table(table_HUMAN_cis_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)
+tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_HUMAN_", protein,"_substrate_regression_trans_sig_fam_noveltag.txt",sep = "")
+write.table(table_HUMAN_trans_sig, file=tn, quote=F, sep = '\t', row.names = FALSE)
+
+# proportion of trans regulation
+trans_tested_count = as.data.frame(table(table_HUMAN_trans$KINASE))
+trans_sig_count = as.data.frame(table(table_HUMAN_trans_sig$KINASE))
+colnames(trans_tested_count) = c("kinase","tested_phosphosites")
+colnames(trans_sig_count) = c("kinase","sig_phosphosites")
+trans_count = merge(trans_tested_count,trans_sig_count,by="kinase",all.x=T)
+trans_count$sig_phosphosites[is.na(trans_count$sig_phosphosites)] = 0
+trans_count$fraction = trans_count$sig_phosphosites/trans_count$tested_phosphosites
+trans_count = trans_count[order(trans_count$fraction, decreasing = T),]
+dim(trans_count[trans_count$sig_phosphosites > 1 & trans_count$fraction > 0.1,])
+trans_count$nonsig_phosphosites = trans_count$tested_phosphosites - trans_count$sig_phosphosites
+
+trans_count_m  = melt(trans_count[trans_count$tested_phosphosites < 100 & trans_count$sig_phosphosites > 1 & trans_count$fraction > 0.1,c("kinase","nonsig_phosphosites","sig_phosphosites")])
+
+p <- ggplot()
+p <- p + geom_bar(data=trans_count_m, aes(y = value, x = kinase, fill = variable ), stat="identity",
+                  position='stack')
+p <- p + xlab(protein)+ylab("number of substrate phosphosites")
+p <- p + theme(axis.title=element_text(size=10)) + ylim(0,100)
+p <- p + theme(axis.text.x = element_text(colour="black", size=10,angle=90, vjust=0.5), axis.text.y = element_text(colour="black", size=10))
+p
 
 # ##### scan for pathway enrichment
 # 

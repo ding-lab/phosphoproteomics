@@ -49,23 +49,96 @@ table_HUMAN_trans = read.delim(paste(baseD,"pan3can_shared_data/analysis_results
 
 table_PDX_cis = read.delim(paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_PDX_", protein,"_substrate_regression_cis.txt",sep = ""))
 table_PDX_trans = read.delim(paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_PDX_", protein,"_substrate_regression_trans.txt",sep = ""))
-table_PDX_cis_sig = table_PDX_cis[table_PDX_cis$P_pro_kin < sig & table_PDX_cis$coef_pro_kin > 0,]
-table_PDX_trans_sig = table_PDX_trans[table_PDX_trans$P_pho_kin < sig & table_PDX_trans$coef_pho_kin > 0,]
+# table_PDX_cis_sig = table_PDX_cis[table_PDX_cis$P_pro_kin < 0.2 & table_PDX_cis$coef_pro_kin > 0,]
+# table_PDX_trans_sig = table_PDX_trans[table_PDX_trans$P_pho_kin < 0.2 & table_PDX_trans$coef_pho_kin > 0,]
+table_PDX_cis_sig = table_PDX_cis[table_PDX_cis$coef_pro_kin > 0.1,] # use coef > 0.1 for now
+table_PDX_trans_sig = table_PDX_trans[table_PDX_trans$coef_pho_kin > 0.1,]
 
-table_HUMAN_cis$validatedInPDX = (table_HUMAN_cis$pair %in% table_PDX_cis_sig$pair) & (table_HUMAN_cis$FDR_pro_kin < sig) 
-table_HUMAN_trans$validatedInPDX = (table_HUMAN_trans$pair %in% table_PDX_trans_sig$pair) & (table_HUMAN_trans$FDR_pho_kin < sig) 
+table_HUMAN_cis$testedInPDX = (table_HUMAN_cis$pair %in% table_PDX_cis$pair)
+table_HUMAN_trans$testedInPDX = (table_HUMAN_trans$pair %in% table_PDX_trans$pair)
+table_HUMAN_cis$testedInPDX = (table_HUMAN_cis$pair %in% table_PDX_cis[table_PDX_cis$Size>20,]$pair)
+table_HUMAN_trans$testedInPDX = (table_HUMAN_trans$pair %in% table_PDX_trans[table_PDX_trans$Size>20,]$pair)
+
+table_HUMAN_cis$validatedInPDX = (table_HUMAN_cis$pair %in% table_PDX_cis_sig$pair) & (table_HUMAN_cis$FDR_pro_kin < sig) & (table_HUMAN_cis$coef_pro_kin > 0) 
+table_HUMAN_trans$validatedInPDX = (table_HUMAN_trans$pair %in% table_PDX_trans_sig$pair) & (table_HUMAN_trans$FDR_pho_kin < sig) & (table_HUMAN_trans$coef_pho_kin > 0) 
 table_HUMAN_cis$sig = table_HUMAN_cis$FDR_pro_kin < sig & table_HUMAN_cis$coef_pro_kin > 0
 table_HUMAN_trans$sig = table_HUMAN_trans$FDR_pho_kin < sig & table_HUMAN_trans$coef_pho_kin > 0
 
 table_PDX_cis_sig_inHuman = table_PDX_cis_sig[table_PDX_cis_sig$pair %in% table_HUMAN_cis$pair[table_HUMAN_cis$sig],]
 table_PDX_trans_sig_inHuman = table_PDX_trans_sig[table_PDX_trans_sig$pair %in% table_HUMAN_trans$pair[table_HUMAN_trans$sig],]
-tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_PDX_", protein,"_substrate_regression_cis_sig_inHuman_fam.txt",sep = "")
-write.table(table_PDX_cis_sig_inHuman, file=tn, quote=F, sep = '\t', row.names = FALSE)
-tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_PDX_", protein,"_substrate_regression_trans_sig_inHuman_fam.txt",sep = "")
-write.table(table_PDX_trans_sig_inHuman, file=tn, quote=F, sep = '\t', row.names = FALSE)
+# tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_PDX_", protein,"_substrate_regression_cis_sig_inHuman_fam_coef0.1.txt",sep = "")
+# write.table(table_PDX_cis_sig_inHuman, file=tn, quote=F, sep = '\t', row.names = FALSE)
+# tn = paste(baseD,"pan3can_shared_data/analysis_results/tables/BRCA_PDX_", protein,"_substrate_regression_trans_sig_inHuman_fam_coef0.1.txt",sep = "")
+# write.table(table_PDX_trans_sig_inHuman, file=tn, quote=F, sep = '\t', row.names = FALSE)
 
 table(table_HUMAN_cis$validatedInPDX,table_HUMAN_cis$sig)
 table(table_HUMAN_trans$validatedInPDX,table_HUMAN_trans$sig)
+
+table_HUMAN_cis_tested = table_HUMAN_cis[table_HUMAN_cis$testedInPDX,]
+table_HUMAN_trans_tested = table_HUMAN_trans[table_HUMAN_trans$testedInPDX,]
+table(table_HUMAN_cis_tested$validatedInPDX,table_HUMAN_cis_tested$sig)
+table(table_HUMAN_trans_tested$validatedInPDX,table_HUMAN_trans_tested$sig)
+
+# negatively correlated trans pairs, addressing reviewers
+dim(table_HUMAN_trans$validatedInPDX[table_HUMAN_trans$coef_pho_kin < 0 & table_HUMAN_trans$FDR_pho_kin< 0.05])
+
+# ROC curve using different coefficient in PDX cohort
+library(pROC)
+# cis
+table_PDX_cis_merge = table_PDX_cis[,c("pair","coef_pro_kin")]
+colnames(table_PDX_cis_merge)[2]="PDX_coef"
+table_HUMAN_cis_tested_pdx = merge(table_HUMAN_cis_tested,table_PDX_cis_merge,by="pair")
+two_by_two = table(table_HUMAN_cis_tested_pdx$sig, table_HUMAN_cis_tested_pdx$PDX_coef > 0.1)
+sensitivity = two_by_two[row.names(two_by_two)==TRUE,colnames(two_by_two)==TRUE]/sum(two_by_two[row.names(two_by_two)==TRUE,])
+specificity = two_by_two[row.names(two_by_two)==F,colnames(two_by_two)==F]/sum(two_by_two[row.names(two_by_two)==FALSE,])
+pdf(paste(baseD,'pan3can_shared_data/analysis_results/figures/cis_PDX_validation_ROC.pdf',sep =""))
+
+cat("ROC analysis of cis associations\n")
+cat("Sensitivity at coefficient 0.1 beta:",sensitivity, "Specificity at coefficient 0.1 beta:",specificity,"\n")
+roc(response = table_HUMAN_cis_tested_pdx$sig, table_HUMAN_cis_tested_pdx$PDX_coef)
+plot(roc(response = table_HUMAN_cis_tested_pdx$sig, table_HUMAN_cis_tested_pdx$PDX_coef))#, direction="<"))
+points(specificity,sensitivity,col="red", pch=19)
+text(specificity+0.3,sensitivity,labels="PDX kinase protein coefficient > 0.1",col="red")
+dev.off()
+
+# trans
+table_PDX_trans_merge = table_PDX_trans[,c("pair","coef_pho_kin")]
+colnames(table_PDX_trans_merge)[2]="PDX_coef"
+table_HUMAN_trans_tested_pdx = merge(table_HUMAN_trans_tested,table_PDX_trans_merge,by="pair")
+two_by_two = table(table_HUMAN_trans_tested_pdx$sig, table_HUMAN_trans_tested_pdx$PDX_coef > 0.1)
+sensitivity = two_by_two[row.names(two_by_two)==TRUE,colnames(two_by_two)==TRUE]/sum(two_by_two[row.names(two_by_two)==TRUE,])
+specificity = two_by_two[row.names(two_by_two)==F,colnames(two_by_two)==F]/sum(two_by_two[row.names(two_by_two)==FALSE,])
+pdf(paste(baseD,'pan3can_shared_data/analysis_results/figures/trans_PDX_validation_ROC.pdf',sep =""))
+cat("ROC analysis of trans associations\n")
+cat("Sensitivity at coefficient 0.1 beta:",sensitivity, "Specificity at coefficient 0.1 beta:",specificity,"\n")
+roc(response = table_HUMAN_trans_tested_pdx$sig, table_HUMAN_trans_tested_pdx$PDX_coef)
+plot(roc(response = table_HUMAN_trans_tested_pdx$sig, table_HUMAN_trans_tested_pdx$PDX_coef))#, direction="<"))
+points(specificity,sensitivity,col="red", pch=19)
+     text(specificity+0.3,sensitivity,labels="PDX kinase phosphoprotein coefficient > 0.1",col="red")
+dev.off()
+
+
+cat("Fraction of trans tested sites showing coef > 0.1 (validation criteria) in PDX dataset:\n")
+table(table_PDX_cis$coef_pro_kin > 0.1)[2]/(table(table_PDX_cis$coef_pro_kin > 0.1)[1] + table(table_PDX_cis$coef_pro_kin > 0.1)[2]) 
+p = ggplot(table_PDX_cis,aes(x=coef_pro_kin, y = -log(P_pro_kin), color = coef_pro_kin > 0.1))
+p = p + geom_point(alpha=0.2, stroke=0) + geom_vline(xintercept = 0, alpha=0.8)
+p = p + geom_vline(xintercept = 0.1, alpha=0.4) + theme_nogrid() + labs(x = "Coefficient for kinase protein level")
+p = p + scale_color_manual(values = c("TRUE" = "red","FALSE" = "grey"))
+p = p + theme(legend.position = "bottom")
+p
+fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/Cis_PDX_coef0.1.pdf',sep ="")
+ggsave(file=fn, height=4, width=4, useDingbats=FALSE)
+
+cat("Fraction of trans tested sites showing coef > 0.1 (validation criteria) in PDX dataset:\n")
+table(table_PDX_trans$coef_pho_kin > 0.1)[2]/(table(table_PDX_trans$coef_pho_kin > 0.1)[1] + table(table_PDX_trans$coef_pho_kin > 0.1)[2]) 
+p = ggplot(table_PDX_trans,aes(x=coef_pho_kin, y = -log(P_pho_kin), color = coef_pho_kin > 0.1))
+p = p + geom_point(alpha=0.02, stroke=0) + geom_vline(xintercept = 0, alpha=0.8)
+p = p + geom_vline(xintercept = 0.1, alpha=0.4) + theme_nogrid() + labs(x = "Coefficient for kinase phosphorylation level")
+p = p + scale_color_manual(values = c("TRUE" = "red","FALSE" = "grey"))
+p = p + theme(legend.position = "bottom")
+p
+fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/Trans_PDX_coef0.1.pdf',sep ="")
+ggsave(file=fn, height=4, width=4, useDingbats=FALSE)
 
 cat("\nPDX validated count\n")
 table(table_PDX_cis_sig_inHuman$KINASE)[order(table(table_PDX_cis_sig_inHuman$KINASE),decreasing = T)][1:20]
@@ -84,7 +157,7 @@ p = p + theme(axis.title = element_text(size=10), axis.text.x = element_text(col
 p = p + labs(x = "Coefficient for kinase protein expression", y="-log10(FDR)")
 p = p + theme(legend.position="bottom")
 p
-fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/BRCA_HUMAN_cis_inPDX_volcano.pdf',sep ="")
+fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/BRCA_HUMAN_cis_inPDX_volcano_coef0.1.pdf',sep ="")
 ggsave(file=fn, height=3, width=3, useDingbats=FALSE)
 
 # trans volcano plotting module -------------------------------------------------
@@ -99,7 +172,7 @@ p = p + theme(axis.title = element_text(size=10), axis.text.x = element_text(col
 p = p + labs(x = "Coefficient for kinase phosphorylation level", y="-log10(FDR)")
 p = p + theme(legend.position="bottom")
 p
-fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/BRCA_HUMAN_trans_inPDX_volcano.pdf',sep ="")
+fn = paste(baseD,'pan3can_shared_data/analysis_results/figures/BRCA_HUMAN_trans_inPDX_volcano_coef0.1.pdf',sep ="")
 ggsave(file=fn, height=3, width=3, useDingbats=FALSE)
 
 # Size~signficance --------------------------------------------------------
