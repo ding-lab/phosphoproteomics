@@ -2,11 +2,11 @@
 # find correlation of phosphorylation level within each protein
 
 # directory and library ---------------------------------------------------
-# # for working on Kuan's mac
-# baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+# for working on Kuan's mac
+baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
 
-# for working on Yige's mac
-baseD = "/Users/yigewu/Box\ Sync/"
+# # for working on Yige's mac
+# baseD = "/Users/yigewu/Box\ Sync/"
 
 library(stringr)
 library(ggplot2)
@@ -14,8 +14,8 @@ library(readr)
 
 # choose cohort and other parameters --------------------------------------
 sig <- 0.05
-# cohort <- "BRCA"
-cohort <- "OV"
+cohort <- "BRCA"
+# cohort <- "OV"
 
 # other input-------------------------------------------------------------------
 #function for normalize the variables for regression

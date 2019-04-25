@@ -2,11 +2,11 @@
 # plot 3D/linear distance and co-phosphorylation correlation FDRs and coefficients
 
 # directory and library ---------------------------------------------------
-# # for working on Kuan's mac
-# baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
+# for working on Kuan's mac
+baseD = "/Users/khuang/Box\ Sync/PhD/proteogenomics/CPTAC_pan3Cancer/"
 
-# for working on Yige's mac
-baseD = "/Users/yigewu/Box\ Sync/"
+# # for working on Yige's mac
+# baseD = "/Users/yigewu/Box\ Sync/"
 
 library(stringr)
 library(ggplot2)
@@ -28,18 +28,30 @@ pairwise_brca$cancer <- "BRCA"
 pairwise_ov$cancer <- "OV"
 pairwise <- rbind(pairwise_brca, pairwise_ov)
 
+# # plot correlation between coef_corr and distances ------------------------
+# p = ggplot(data = pairwise, aes(x = dis_3d , y = coef_corr, color = fdr_corr < 0.05))
+# p = p + facet_grid(.~cancer,scales = "free_y")#, drop=T, space = "free_y",scales = "free_y")#, space = "free", scales = "free")
+# p = p + geom_smooth(method = "glm", se=FALSE, color="black", formula = y ~ x)
+# p = p + geom_point(alpha=0.3, stroke=0) #+ scale_color_gradientn(name= "FDR", na.value=NA)
+# p = p + geom_text(aes(label= ifelse((dis_3d < 4 & coef_corr <0.4) | (dis_3d > 9 & coef_corr > 0.95), pair, NA ), vjust = -1, hjust = 1),size=2,alpha=0.5)
+# p = p + theme_bw()
+# p = p + labs(x="3D distance (ångström)", y = "Correlation coefficient")
+# #p = p + expand_limits(x = 0) 
+# p
+# fn = paste(baseD,'pan3can_shared_data/analysis_results/hotspot3d/within_protein_2can_distance_3d_and_coef_corr_correlation.pdf',sep ="")
+# ggsave(file=fn, height=5, width=10)
+
 # plot correlation between coef_corr and distances ------------------------
-p = ggplot(data = pairwise, aes(x = dis_3d , y = coef_corr, color = fdr_corr < 0.05))
-p = p + facet_grid(.~cancer,scales = "free_y")#, drop=T, space = "free_y",scales = "free_y")#, space = "free", scales = "free")
-p = p + geom_smooth(method = "glm", se=FALSE, color="black", formula = y ~ x)
+p = ggplot(data = pairwise, aes(x = dis_3d , y = coef_corr, color = cancer))
+#p = p + facet_grid(.~cancer,scales = "free_y")#, drop=T, space = "free_y",scales = "free_y")#, space = "free", scales = "free")
+p = p + geom_smooth(method = "glm", color="black", formula = y ~ x)
 p = p + geom_point(alpha=0.3, stroke=0) #+ scale_color_gradientn(name= "FDR", na.value=NA)
-p = p + geom_text(aes(label= ifelse((dis_3d < 4 & coef_corr <0.4) | (dis_3d > 9 & coef_corr > 0.95), pair, NA ), vjust = -1, hjust = 1),size=2,alpha=0.5)
 p = p + theme_bw()
 p = p + labs(x="3D distance (ångström)", y = "Correlation coefficient")
 #p = p + expand_limits(x = 0) 
 p
 fn = paste(baseD,'pan3can_shared_data/analysis_results/hotspot3d/within_protein_2can_distance_3d_and_coef_corr_correlation.pdf',sep ="")
-ggsave(file=fn, height=5, width=10)
+ggsave(file=fn, height=5, width=6,useDingbats=F)
 
 
 
